@@ -1,0 +1,61 @@
+/* FIX: SIDEBAR OUTSIDE BLUR - SPOTIFY STYLE */
+
+#sidebar-overlay{
+  position:fixed;
+  inset:0;
+  top:var(--top-h);
+  bottom:var(--player-h);
+  background:rgba(5,10,20,0.45);
+  backdrop-filter:blur(12px) saturate(1.2);
+  -webkit-backdrop-filter:blur(12px) saturate(1.2);
+  z-index:44; /* BELOW sidebar */
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .28s ease, backdrop-filter .28s ease;
+}
+#sidebar-overlay.active{
+  opacity:1;
+  pointer-events:auto;
+}
+
+/* blur the CONTENT when drawer open, NOT the sidebar */
+#main-row.sidebar-open #app-view{
+  filter:blur(8px);
+  transform:scale(0.98);
+  transition:filter .28s ease, transform .28s ease;
+  pointer-events:none;
+}
+
+@media (max-width: 1024px){
+  /* RIGHT = GONE */
+  #right-sidebar, .right-toggle-btn{ display:none !important; }
+
+  /* LEFT = SHARP, SOLID, OUTSIDE BLUR */
+  #left-sidebar{
+    position:fixed;
+    left:0;top:var(--top-h);bottom:var(--player-h);
+    width:280px !important;min-width:280px !important;
+    transform:translateX(-105%);
+    z-index:50 !important; /* ABOVE overlay */
+    background:#0A1931 !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    filter:none !important;
+    box-shadow:12px 0 40px rgba(0,0,0,0.7);
+    border-right:1px solid rgba(255,255,255,0.1);
+    will-change:transform;
+  }
+  #left-sidebar.open{
+    transform:translateX(0);
+  }
+  #left-sidebar .sidebar-inner{
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    filter:none !important;
+    background:transparent !important;
+  }
+  #left-sidebar *{
+    filter:none !important;
+    backdrop-filter:none !important;
+  }
+}
