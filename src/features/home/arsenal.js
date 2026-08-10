@@ -1,141 +1,2106 @@
 // ===============================
-// ARSENAL V2 - FIXED COVER CENTER + HEART
+// ARSENAL - LIGHT / LAZY / PRO - FINAL V2.7
+// FIXED: pills click + drag scroll + wheel + filter outside drag
+// DNA: #0A1931 | #050A14 | #FF1E3C | #1E90FF
 // ===============================
+
 const STATS_API = "https://all-beats-analytics-api.dopetone701.workers.dev";
 
 const PLAY_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>`;
-const DOWNLOAD_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>`;
-const DOLLAR_SVG = `<span style="font-weight:900;font-size:16px">$</span>`;
-const HEART_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
-const HEART_FILL = `<svg viewBox="0 0 24 24" width="18" height="18" fill="#ff2040" stroke="#ff2040" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+
+const DOTS_SVG = `
+<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+  <circle cx="12" cy="5" r="2"/>
+  <circle cx="12" cy="12" r="2"/>
+  <circle cx="12" cy="19" r="2"/>
+</svg>`;
+
+const HEART_PATH = `
+<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5
+  2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09
+  C13.09 3.81 14.76 3 16.5 3
+  19.58 3 22 5.42 22 8.5
+  c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>`;
+
+const HEART_SVG = `
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+  ${HEART_PATH}
+</svg>`;
+
+const HEART_FILL = `
+<svg viewBox="0 0 24 24" fill="#FF1E3C" stroke="#FF1E3C" stroke-width="1.8">
+  ${HEART_PATH}
+</svg>`;
 
 let waveCache = new Map();
 let observer = null;
-let activeBeatsRef = [];
+let activeBeats = [];
+let currentFilter = "all";
 
-(function inject(){
-  if(document.getElementById('arsenal-final-fix')) document.getElementById('arsenal-final-fix').remove();
-  const s=document.createElement('style');
-  s.id='arsenal-final-fix';
-  s.textContent=`
-    .arsenal-inner{padding:8px 10px!important;}
-    .view-toggle{display:flex;justify-content:flex-start;align-items:center;gap:12px;margin-bottom:8px!important;padding:0 2px!important;}
-    .toggle-fixed{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
-    .arsenal-bar-title{font-size:14px!important;font-weight:900!important;letter-spacing:1px!important;margin:0!important;white-space:nowrap}
-    .pills-scroll{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
-    .pills-scroll::-webkit-scrollbar{display:none}
-    .pill{padding:5px 12px;border-radius:20px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);color:#8a94b8;font-size:11px;font-weight:600;white-space:nowrap;cursor:pointer;transition:.2s}
-    .pill.active,.pill:hover{background:#fff;color:#000;border-color:#fff}
-    #waveList{display:flex;flex-direction:column;gap:6px!important;}
-    .wave-row{display:flex!important;align-items:center!important;gap:8px!important;padding:7px 8px!important;background:rgba(18,24,58,0.9)!important;border:1px solid rgba(255,255,255,0.06)!important;border-radius:10px!important;min-height:56px!important;width:100%!important}
-    .wave-left{flex:0 0 42px!important;width:42px!important;height:42px!important;display:flex!important;align-items:center!important;justify-content:center!important}
-    /* COVER FIX - LOCKED CENTER NO BLUR */
-    .wave-cover-wrap{width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;border-radius:7px!important;overflow:hidden!important;position:relative!important;background:#0a0e2a!important;display:block!important;flex-shrink:0!important;isolation:isolate!important}
-    .wave-cover-wrap img{position:absolute!important;top:50%!important;left:50%!important;width:100%!important;height:100%!important;min-width:100%!important;min-height:100%!important;object-fit:cover!important;object-position:50% 50%!important;transform:translate(-50%,-50%)!important;display:block!important;filter:none!important;image-rendering:-webkit-optimize-contrast!important}
-    .wave-play{position:absolute!important;inset:0!important;z-index:2!important;display:flex!important;align-items:center!important;justify-content:center!important;background:rgba(0,0,0,0.25)!important;border:0!important;color:#fff!important}
-    .wave-info{flex:0 0 105px!important;min-width:0!important}
-    .wave-title{font-size:12px!important;font-weight:600!important;color:#fff!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;line-height:1.1!important}
-    .wave-meta{font-size:10px!important;color:#6e7aa0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-    .wave-bar{flex:1 1 0%!important;min-width:0!important;width:100%!important;height:36px!important;margin-left:2px!important;display:block!important}
-    .wave-bar wave{width:100%!important;display:block!important}
-    .wave-bar canvas{width:100%!important}
-    .wave-actions{display:flex!important;align-items:center!important;gap:6px!important;flex:0 0 auto!important}
-    .wave-heat{width:30px!important;height:30px!important;border-radius:8px!important;border:1px solid rgba(255,255,255,0.08)!important;background:rgba(255,255,255,0.04)!important;color:#8a94b8!important;display:flex!important;align-items:center!important;justify-content:center!important;cursor:pointer!important;transition:.2s!important}
-    .wave-heat:hover{border-color:rgba(255,32,64,0.5)!important;color:#ff2040!important;background:rgba(255,32,64,0.08)!important}
-    .wave-heat.is-liked{background:rgba(255,32,64,0.15)!important;border-color:rgba(255,32,64,0.5)!important;color:#ff2040!important}
-    .wave-heat.pop{transform:scale(1.25)}
-    .wave-price{display:flex!important;gap:4px!important;align-items:center!important;font-size:11px!important}
-    .old-price{color:#5a658a!important;text-decoration:line-through!important;font-size:9px!important}
-    .new-price{color:#fff!important;font-weight:700!important}
-    .wave-download{width:30px!important;height:30px!important;border-radius:8px!important;border:1px solid rgba(255,255,255,0.08)!important;background:rgba(255,255,255,0.05)!important;color:#fff!important;display:flex!important;align-items:center!important;justify-content:center!important;cursor:pointer!important}
-  `;
-  document.head.appendChild(s);
-})();
+// ===============================
+// DATA
+// ===============================
 
-const getLikes = ()=>{ try{ return JSON.parse(localStorage.getItem('dopetone_likes')||'[]'); }catch{return[];} };
-const toggleLike = (beat)=>{
-  let likes=getLikes(); const sid=String(beat.id);
-  const liked=likes.includes(sid);
-  if(liked) likes=likes.filter(x=>x!==sid); else { likes.push(sid); try{ fetch(`${STATS_API}/api/stats/event`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({beat_id:parseInt(beat.id), event_type:'like'})}); }catch{} }
-  localStorage.setItem('dopetone_likes', JSON.stringify(likes)); return!liked;
+const getBeats = () =>
+  window.__BEATS__ ||
+  window.DTStore?.beats ||
+  window.store?.beats ||
+  [];
+
+const getLikes = () => {
+  try {
+    return JSON.parse(
+      localStorage.getItem("dopetone_likes") || "[]"
+    );
+  } catch {
+    return [];
+  }
 };
-const isSignedIn = ()=>!!window.currentUser ||!!localStorage.getItem('dopetone_user') ||!!localStorage.getItem('sb-access-token');
-const getMode=(b)=>{ let m=(b.monetization_mode||'').toLowerCase(); if(['free','hybrid','paid'].includes(m)) return m; if(b.is_free) return 'free'; return 'paid'; };
-const getPriceHTML=(b)=>{ const mode=getMode(b); if(mode==='free') return `<span class="new-price">FREE</span>`; return `<span class="old-price">$49</span><span class="new-price">$${b.price||29.99}</span>`; };
-async function triggerDownload(beat){ const res=await fetch(`${STATS_API}/api/download?id=${beat.id}`); const blob=await res.blob(); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`${beat.title}.mp3`; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(url); a.remove();},1000); }
-const handleDownload=(beat)=>{ if(getMode(beat)==='paid') return; if(!isSignedIn()){ alert('Login'); return; } triggerDownload(beat); };
-const handleBuy=(beat)=>{ if(getMode(beat)==='free'){ handleDownload(beat); return; } let cart=JSON.parse(localStorage.getItem("dopetone_cart")||"[]"); if(!cart.find(x=>String(x.id)===String(beat.id))){ cart.push(beat); localStorage.setItem("dopetone_cart", JSON.stringify(cart)); } location.href=`licence-page.html?id=${beat.id}`; };
 
-function ensureWave(row, beat){
-  const id=String(beat.id); const container=row.querySelector(`#wave-${id}`); if(!container||!beat.mp3_url) return;
-  if(waveCache.has(id)&&row.dataset.done==='1') return; if(container.children.length===0) row.dataset.done='0'; if(row.dataset.done==='1') return; row.dataset.done='1';
-  const WS=window.WaveSurfer|| (typeof WaveSurfer !== 'undefined'?WaveSurfer:null);
-  if(!WS||!WS.create){ row.dataset.done='0'; return; }
-  try{
-    container.innerHTML="";
-    const wave=WS.create({ container, waveColor:"rgba(120,130,255,0.28)", progressColor:"#ff2040", cursorWidth:0, height:36, barWidth:0, normalize:true, interact:true, partialRender:false });
+const saveLikes = likes =>
+  localStorage.setItem(
+    "dopetone_likes",
+    JSON.stringify(likes)
+  );
+
+const isSignedIn = () =>
+  !!window.currentUser ||
+  !!localStorage.getItem("dopetone_user") ||
+  !!localStorage.getItem("sb-access-token");
+
+const getMode = beat => {
+  const mode = String(
+    beat.monetization_mode || ""
+  ).toLowerCase();
+
+  if (
+    mode === "free" ||
+    mode === "hybrid" ||
+    mode === "paid"
+  ) {
+    return mode;
+  }
+
+  return beat.is_free ? "free" : "paid";
+};
+
+// ===============================
+// WAVE CLEANUP
+// ===============================
+
+function destroyWaves() {
+  if (observer) {
+    observer.disconnect();
+    observer = null;
+  }
+
+  waveCache.forEach(wave => {
+    try {
+      wave.destroy();
+    } catch {}
+  });
+
+  waveCache.clear();
+}
+
+// ===============================
+// WAVE SURFER
+// ===============================
+
+function ensureWave(row, beat) {
+  if (!row || row.dataset.waveReady === "1") return;
+  if (!beat?.mp3_url) return;
+
+  const container = row.querySelector(".wave-bar");
+  if (!container) return;
+
+  const WS =
+    window.WaveSurfer ||
+    (typeof WaveSurfer !== "undefined"
+      ? WaveSurfer
+      : null);
+
+  if (!WS?.create) return;
+
+  row.dataset.waveReady = "1";
+
+  try {
+    const wave = WS.create({
+      container,
+
+      waveColor: "rgba(255,255,255,.16)",
+      progressColor: "#FF1E3C",
+
+      cursorWidth: 0,
+
+      height: 38,
+
+      barWidth: 2,
+      barGap: 2,
+
+      normalize: true,
+      interact: true,
+      partialRender: true
+    });
+
     wave.load(beat.mp3_url);
-    wave.on('error',()=>{ row.dataset.done='0'; waveCache.delete(id); });
-    row.__wave=wave; waveCache.set(id,wave);
-  }catch{ row.dataset.done='0'; }
+
+    wave.on("error", () => {
+      row.dataset.waveReady = "0";
+      waveCache.delete(String(beat.id));
+    });
+
+    row.__wave = wave;
+
+    waveCache.set(
+      String(beat.id),
+      wave
+    );
+  } catch {
+    row.dataset.waveReady = "0";
+  }
 }
 
-export async function renderWave(limit=10){
-  const container=document.getElementById("waveList"); if(!container) return;
-  waveCache.forEach(w=>{ try{w.destroy()}catch{} }); waveCache.clear(); if(observer){ observer.disconnect(); observer=null; }
-  const beats=window.__BEATS__||window.DTStore?.beats||[]; if(!beats.length){ container.innerHTML=`<div style="padding:12px;color:#9CA3AF;font-size:12px">No beats</div>`; return; }
-  let list=beats.slice(0, limit||10); activeBeatsRef=[...list]; container.innerHTML="";
-  list.forEach((beat, index)=>{
-    const mode=getMode(beat); const liked=getLikes().includes(String(beat.id));
-    const row=document.createElement("div"); row.className="wave-row"; row.dataset.beatId=beat.id;
-row.innerHTML=`<div class="wave-left"><div class="wave-cover-wrap"><img src="${beat.cover_url||''}" loading="eager" decoding="sync" style="width:100%;height:100%;object-fit:cover;object-position:center center;display:block"><button class="wave-play">${PLAY_SVG}</button></div></div><div class="wave-info"><div class="wave-title">${beat.title}</div><div class="wave-meta">${beat.bpm||'--'} BPM • ${beat.genre||''}</div></div><div class="wave-bar" id="wave-${beat.id}"></div><div class="wave-actions"><button class="wave-heat ${liked?'is-liked':''}">${liked?HEART_FILL:HEART_SVG}</button><div class="wave-price">${getPriceHTML(beat)}</div><button class="wave-download">${mode==='paid'?DOLLAR_SVG:DOWNLOAD_SVG}</button></div>`;
-    container.appendChild(row);
-    row.querySelector('.wave-play').onclick=(e)=>{ e.stopPropagation(); ensureWave(row,beat); window.__CURRENT_BEAT__=beat; const idx=activeBeatsRef.findIndex(b=>String(b.id)===String(beat.id)); if(window.globalPlayer?.play) window.globalPlayer.play(idx>=0?idx:index, activeBeatsRef, 'wave'); };
-    row.querySelector('.wave-heat').onclick=(e)=>{ e.stopPropagation(); const now=toggleLike(beat); e.currentTarget.classList.toggle('is-liked',now); e.currentTarget.innerHTML=now?HEART_FILL:HEART_SVG; e.currentTarget.classList.add('pop'); setTimeout(()=>e.currentTarget.classList.remove('pop'),250); };
-    row.querySelector('.wave-price').onclick=(e)=>{ e.stopPropagation(); handleBuy(beat); };
-    row.querySelector('.wave-download').onclick=(e)=>{ e.stopPropagation(); if(mode==='paid') handleBuy(beat); else handleDownload(beat); };
-    row.addEventListener('click',(e)=>{ if(e.target.closest('.wave-heat,.wave-price,.wave-download,.wave-bar')) return; row.querySelector('.wave-play').click(); });
-  });
-  observer=new IntersectionObserver((entries)=>{ entries.forEach(en=>{ if(en.isIntersecting){ const r=en.target; const b=activeBeatsRef.find(x=>String(x.id)===String(r.dataset.beatId)); if(b) ensureWave(r,b); observer.unobserve(r); } }); }, {rootMargin:"300px"});
-  container.querySelectorAll('.wave-row').forEach(r=>observer.observe(r));
-  injectPills();
+// ===============================
+// MENUS
+// ===============================
+
+function closeAllMenus() {
+  document
+    .querySelectorAll(".dt-row-menu.active")
+    .forEach(menu =>
+      menu.classList.remove("active")
+    );
+
+  document
+    .querySelectorAll(".wave-row")
+    .forEach(row =>
+      row.style.zIndex = "1"
+    );
 }
 
-function injectPills(){
-  const mount=document.getElementById('pillsMount'); if(!mount) return;
-  const beats=window.__BEATS__||[]; const genres=[...new Set(beats.map(b=>b.genre).filter(Boolean))].slice(0,8);
-  const all=['All',...genres];
-  mount.innerHTML=all.map((g,i)=>`<button class="pill ${i===0?'active':''}" data-g="${g.toLowerCase()}">${g}</button>`).join('');
-  mount.querySelectorAll('.pill').forEach(p=>{
-    p.onclick=()=>{
-      mount.querySelectorAll('.pill').forEach(x=>x.classList.remove('active')); p.classList.add('active');
-      const g=p.dataset.g; if(g==='all'){ window.__BEATS_FILTERED__=null; renderWave(); return; }
-      window.__BEATS_FILTERED__=(window.__BEATS__||[]).filter(b=>(b.genre||'').toLowerCase().includes(g));
-      const filtered=window.__BEATS_FILTERED__; const container=document.getElementById("waveList"); if(!container) return;
-      activeBeatsRef=[...filtered]; container.innerHTML=""; filtered.slice(0,20).forEach((beat,idx)=>{
-        const mode=getMode(beat); const liked=getLikes().includes(String(beat.id));
-        const row=document.createElement("div"); row.className="wave-row"; row.dataset.beatId=beat.id;
-        row.innerHTML=`<div class="wave-left"><div class="wave-cover-wrap"><img src="${beat.cover_url||''}" loading="eager" decoding="sync"><button class="wave-play">${PLAY_SVG}</button></div></div><div class="wave-info"><div class="wave-title">${beat.title}</div><div class="wave-meta">${beat.bpm} BPM • ${beat.genre}</div></div><div class="wave-bar" id="wave-${beat.id}"></div><div class="wave-actions"><button class="wave-heat ${liked?'is-liked':''}">${liked?HEART_FILL:HEART_SVG}</button><div class="wave-price">${getPriceHTML(beat)}</div><button class="wave-download">${mode==='paid'?DOLLAR_SVG:DOWNLOAD_SVG}</button></div>`;
-        container.appendChild(row); ensureWave(row,beat);
-        row.querySelector('.wave-play').onclick=(e)=>{ e.stopPropagation(); ensureWave(row,beat); window.__CURRENT_BEAT__=beat; if(window.globalPlayer?.play) window.globalPlayer.play(idx, filtered, 'wave'); };
-      });
+document.addEventListener("click", e => {
+  if (!e.target.closest(".dt-dots-wrap")) {
+    closeAllMenus();
+  }
+});
+
+// ===============================
+// DOTS MENU
+// ===============================
+
+function createDotsMenu(beat) {
+  const mode = getMode(beat);
+
+  const liked = getLikes().includes(
+    String(beat.id)
+  );
+
+  const wrap =
+    document.createElement("div");
+
+  wrap.className = "dt-dots-wrap";
+
+  wrap.innerHTML = `
+    <button
+      class="wave-dots"
+      type="button"
+    >
+      ${DOTS_SVG}
+    </button>
+
+    <div class="dt-row-menu">
+
+      <button data-act="goto">
+        Go to beat
+      </button>
+
+      <button data-act="playlist">
+        Add to playlist
+      </button>
+
+      <button data-act="like">
+        ${liked ? "Unlike" : "Like beat"}
+      </button>
+
+      <button data-act="share">
+        Share beat
+      </button>
+
+      ${
+        mode !== "paid"
+          ? `<button data-act="download">Download</button>`
+          : ""
+      }
+
+      <button data-act="cart">
+        Add to cart
+      </button>
+
+      <button data-act="buy">
+        Buy - $${Number(
+          beat.price || 29.99
+        ).toFixed(2)}
+      </button>
+
+    </div>
+  `;
+
+  const btn =
+    wrap.querySelector(".wave-dots");
+
+  const menu =
+    wrap.querySelector(".dt-row-menu");
+
+  btn.onclick = e => {
+    e.stopPropagation();
+
+    const was =
+      menu.classList.contains("active");
+
+    closeAllMenus();
+
+    if (!was) {
+      menu.classList.add("active");
+
+      wrap.closest(
+        ".wave-row"
+      ).style.zIndex = "999";
+    }
+  };
+
+  menu.onclick = e => {
+    e.stopPropagation();
+
+    const act =
+      e.target.closest("button")
+        ?.dataset.act;
+
+    if (!act) return;
+
+    closeAllMenus();
+
+    // ===============================
+    // GO TO
+    // ===============================
+
+    if (act === "goto") {
+      location.href =
+        `beat.html?id=${beat.id}`;
+    }
+
+    // ===============================
+    // PLAYLIST
+    // ===============================
+
+    if (act === "playlist") {
+      const pls = JSON.parse(
+        localStorage.getItem(
+          "dopetone_playlists"
+        ) || "[]"
+      );
+
+      let my = pls.find(
+        p => p.name === "My Playlist"
+      );
+
+      if (!my) {
+        my = {
+          id: Date.now(),
+          name: "My Playlist",
+          beats: []
+        };
+
+        pls.push(my);
+      }
+
+      if (
+        !my.beats.includes(
+          String(beat.id)
+        )
+      ) {
+        my.beats.push(
+          String(beat.id)
+        );
+      }
+
+      localStorage.setItem(
+        "dopetone_playlists",
+        JSON.stringify(pls)
+      );
+    }
+
+    // ===============================
+    // LIKE
+    // ===============================
+
+    if (act === "like") {
+      let likes = getLikes();
+
+      const id = String(beat.id);
+
+      const cl =
+        likes.includes(id);
+
+      likes = cl
+        ? likes.filter(
+            x => x !== id
+          )
+        : [...likes, id];
+
+      saveLikes(likes);
+
+      const row =
+        document.querySelector(
+          `.wave-row[data-beat-id="${beat.id}"] .wave-heat`
+        );
+
+      if (row) {
+        row.classList.toggle(
+          "is-liked",
+          !cl
+        );
+
+        row.innerHTML =
+          !cl
+            ? HEART_FILL
+            : HEART_SVG;
+      }
+    }
+
+    // ===============================
+    // SHARE
+    // ===============================
+
+    if (act === "share") {
+      const url =
+        `${location.origin}/beat.html?id=${beat.id}`;
+
+      if (
+        navigator.clipboard
+      ) {
+        navigator.clipboard.writeText(url);
+      } else {
+        prompt("Copy:", url);
+      }
+    }
+
+    // ===============================
+    // DOWNLOAD
+    // ===============================
+
+    if (act === "download") {
+      downloadBeat(beat);
+    }
+
+    // ===============================
+    // CART
+    // ===============================
+
+    if (act === "cart") {
+      let cart = JSON.parse(
+        localStorage.getItem(
+          "dopetone_cart"
+        ) || "[]"
+      );
+
+      if (
+        !cart.some(
+          x =>
+            String(x.id) ===
+            String(beat.id)
+        )
+      ) {
+        cart.push(beat);
+
+        localStorage.setItem(
+          "dopetone_cart",
+          JSON.stringify(cart)
+        );
+      }
+    }
+
+    // ===============================
+    // BUY
+    // ===============================
+
+    if (act === "buy") {
+      buyBeat(beat);
+    }
+  };
+
+  return wrap;
+}
+
+// ===============================
+// CREATE ROW
+// ===============================
+
+function createRow(
+  beat,
+  index,
+  list
+) {
+  const mode = getMode(beat);
+
+  const liked =
+    getLikes().includes(
+      String(beat.id)
+    );
+
+  const row =
+    document.createElement("div");
+
+  row.className = "wave-row";
+
+  row.dataset.beatId =
+    beat.id;
+
+  row.dataset.mode =
+    mode;
+
+  row.innerHTML = `
+    <div class="wave-left">
+
+      <div class="wave-cover-wrap">
+
+        <img
+          src="${beat.cover_url || ""}"
+          loading="lazy"
+          alt=""
+        >
+
+        <button
+          class="wave-play"
+          type="button"
+        >
+          ${PLAY_SVG}
+        </button>
+
+      </div>
+
+    </div>
+
+    <div class="wave-info">
+
+      <div class="wave-title">
+        ${beat.title || "Untitled"}
+      </div>
+
+      <div class="wave-meta">
+        ${beat.bpm || "--"} BPM •
+        ${beat.genre || ""}
+      </div>
+
+    </div>
+
+    <div class="wave-bar"></div>
+
+    <div class="wave-actions">
+
+      <button
+        class="wave-heat ${
+          liked ? "is-liked" : ""
+        }"
+        type="button"
+      >
+        ${
+          liked
+            ? HEART_FILL
+            : HEART_SVG
+        }
+      </button>
+
+      <button
+        class="wave-buy ${
+          mode === "free"
+            ? "is-free"
+            : "is-paid"
+        }"
+        type="button"
+      >
+        ${
+          mode === "free"
+            ? "FREE"
+            : `$${Number(
+                beat.price || 29.99
+              ).toFixed(2)}`
+        }
+      </button>
+
+    </div>
+  `;
+
+  row
+    .querySelector(".wave-actions")
+    .appendChild(
+      createDotsMenu(beat)
+    );
+
+  // ===============================
+  // ROW CLICK
+  // ===============================
+
+  row.onclick = e => {
+    const t =
+      e.target.closest(
+        ".wave-play,.wave-heat,.wave-buy,.wave-bar,.dt-dots-wrap"
+      );
+
+    if (t) return;
+
+    row
+      .querySelector(".wave-play")
+      .click();
+  };
+
+  // ===============================
+  // PLAY
+  // ===============================
+
+  row
+    .querySelector(".wave-play")
+    .onclick = e => {
+      e.stopPropagation();
+
+      ensureWave(
+        row,
+        beat
+      );
+
+      window.__CURRENT_BEAT__ =
+        beat;
+
+      if (
+        window.globalPlayer?.play
+      ) {
+        window.globalPlayer.play(
+          index,
+          list,
+          "wave"
+        );
+      }
     };
-  });
+
+  // ===============================
+  // LIKE BUTTON
+  // ===============================
+
+  row
+    .querySelector(".wave-heat")
+    .onclick = e => {
+      e.stopPropagation();
+
+      let likes =
+        getLikes();
+
+      const id =
+        String(beat.id);
+
+      const cl =
+        likes.includes(id);
+
+      if (cl) {
+        likes =
+          likes.filter(
+            x => x !== id
+          );
+      } else {
+        likes.push(id);
+
+        fetch(
+          `${STATS_API}/api/stats/event`,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+              beat_id:
+                Number(beat.id),
+
+              event_type:
+                "like"
+            })
+          }
+        ).catch(() => {});
+      }
+
+      saveLikes(likes);
+
+      const btn =
+        e.currentTarget;
+
+      btn.classList.toggle(
+        "is-liked",
+        !cl
+      );
+
+      btn.innerHTML =
+        !cl
+          ? HEART_FILL
+          : HEART_SVG;
+
+      btn.classList.add(
+        "pop"
+      );
+
+      setTimeout(
+        () =>
+          btn.classList.remove(
+            "pop"
+          ),
+        300
+      );
+    };
+
+  // ===============================
+  // BUY BUTTON
+  // ===============================
+
+  row
+    .querySelector(".wave-buy")
+    .onclick = e => {
+      e.stopPropagation();
+
+      mode === "paid"
+        ? buyBeat(beat)
+        : downloadBeat(beat);
+    };
+
+  return row;
 }
 
-export function renderBeatsArsenal(){ return `<div class="arsenal-inner"><div class="view-toggle"><div class="toggle-fixed"><h2 class="arsenal-bar-title">ARSENAL</h2><div class="pills-scroll" id="pillsMount"></div></div></div><div id="waveList" class="wave-list"></div></div>`; }
-export function initBeatsArsenal(){ renderWave(); }
-window.renderWave=renderWave;
+// ===============================
+// RENDER ROWS
+// ===============================
 
-(function(){
-  const getAudio=()=>document.querySelector('audio')||window.__DT_AUDIO__;
-  setInterval(()=>{
-    const a=getAudio(); if(!a||!a.duration||a.paused) return;
-    const p=a.currentTime/a.duration; const cur=window.__CURRENT_BEAT__?.id; if(!cur) return;
-    document.querySelectorAll('.wave-row').forEach(r=>{ const w=r.__wave; if(!w) return; if(String(r.dataset.beatId)===String(cur)) w.seekTo(p); else w.seekTo(0); });
-  }, 50);
-  document.addEventListener('click',(e)=>{
-    const bar=e.target.closest('.wave-bar'); if(!bar) return;
-    const rect=bar.getBoundingClientRect(); const pr=(e.clientX-rect.left)/rect.width; const a=getAudio(); if(a&&a.duration) a.currentTime=pr*a.duration;
+function renderRows(list) {
+  const container =
+    document.getElementById(
+      "waveList"
+    );
+
+  if (!container) return;
+
+  destroyWaves();
+
+  activeBeats =
+    list.slice(0, 20);
+
+  container.innerHTML = "";
+
+  if (!activeBeats.length) {
+    container.innerHTML = `
+      <div
+        style="
+          padding:12px;
+          color:#9CA3AF
+        "
+      >
+        No beats
+      </div>
+    `;
+
+    return;
+  }
+
+  const frag =
+    document.createDocumentFragment();
+
+  activeBeats.forEach(
+    (beat, i) => {
+      frag.appendChild(
+        createRow(
+          beat,
+          i,
+          activeBeats
+        )
+      );
+    }
+  );
+
+  container.appendChild(
+    frag
+  );
+
+  setupLazyWaves();
+}
+
+// ===============================
+// LAZY WAVES
+// ===============================
+
+function setupLazyWaves() {
+  if (observer) {
+    observer.disconnect();
+  }
+
+  observer =
+    new IntersectionObserver(
+      entries => {
+        entries.forEach(
+          entry => {
+            if (
+              !entry.isIntersecting
+            ) {
+              return;
+            }
+
+            const row =
+              entry.target;
+
+            const beat =
+              activeBeats.find(
+                b =>
+                  String(b.id) ===
+                  String(
+                    row.dataset.beatId
+                  )
+              );
+
+            if (beat) {
+              ensureWave(
+                row,
+                beat
+              );
+            }
+
+            observer.unobserve(
+              row
+            );
+          }
+        );
+      },
+      {
+        root: null,
+        rootMargin:
+          "0px 0px 450px 0px",
+        threshold: 0
+      }
+    );
+
+  document
+    .querySelectorAll(
+      "#waveList .wave-row"
+    )
+    .forEach(row =>
+      observer.observe(row)
+    );
+}
+
+// ===============================
+// RENDER WAVE
+// ===============================
+
+export function renderWave(
+  limit = 10
+) {
+  const beats =
+    getBeats();
+
+  if (!beats.length) {
+    const c =
+      document.getElementById(
+        "waveList"
+      );
+
+    if (c) {
+      c.innerHTML = `
+        <div
+          style="
+            padding:12px;
+            color:#9CA3AF
+          "
+        >
+          No beats
+        </div>
+      `;
+    }
+
+    return;
+  }
+
+  let list =
+    beats;
+
+  if (
+    currentFilter !==
+    "all"
+  ) {
+    list =
+      beats.filter(
+        b =>
+          String(
+            b.genre || ""
+          )
+            .toLowerCase()
+            .includes(
+              currentFilter
+            )
+      );
+  }
+
+  renderRows(
+    list.slice(
+      0,
+      limit || 10
+    )
+  );
+}
+
+// =====================================================
+// PILLS
+// =====================================================
+
+function injectPills() {
+  const mount =
+    document.getElementById(
+      "pillsMount"
+    );
+
+  if (!mount) return;
+
+  const genres = [
+    ...new Set(
+      getBeats()
+        .map(
+          b => b.genre
+        )
+        .filter(Boolean)
+    )
+  ].slice(0, 12);
+
+  // ===============================
+  // PILL HTML
+  // ===============================
+
+  mount.innerHTML = `
+    <button
+      class="pill filter-btn"
+      id="genreFilterBtn"
+      type="button"
+    >
+      Filter ▾
+    </button>
+
+    <div
+      class="dt-pills-divider"
+    ></div>
+
+    <div
+      class="dt-pills-scroll"
+      id="dtPillsScroll"
+    >
+
+      <button
+        class="pill ${
+          currentFilter === "all"
+            ? "active"
+            : ""
+        }"
+        data-g="all"
+        type="button"
+      >
+        All
+      </button>
+
+      ${genres
+        .map(
+          g => `
+            <button
+              class="pill ${
+                currentFilter ===
+                g.toLowerCase()
+                  ? "active"
+                  : ""
+              }"
+              data-g="${String(
+                g
+              ).toLowerCase()}"
+              type="button"
+            >
+              ${g}
+            </button>
+          `
+        )
+        .join("")}
+
+    </div>
+  `;
+
+  const scroll =
+    mount.querySelector(
+      "#dtPillsScroll"
+    );
+
+  if (!scroll) return;
+
+  // =====================================================
+  // PILL CLICK
+  // =====================================================
+
+  scroll.addEventListener(
+    "click",
+    e => {
+      const pill =
+        e.target.closest(
+          ".pill"
+        );
+
+      if (!pill) return;
+
+      // A genuine drag should NOT select a pill.
+      if (
+        scroll.dataset.hasDragged ===
+        "1"
+      ) {
+        scroll.dataset.hasDragged =
+          "0";
+
+        return;
+      }
+
+      const filter =
+        pill.dataset.g;
+
+      // Remove active
+      scroll
+        .querySelectorAll(
+          ".pill"
+        )
+        .forEach(p =>
+          p.classList.remove(
+            "active"
+          )
+        );
+
+      // Activate clicked pill
+      pill.classList.add(
+        "active"
+      );
+
+      // Set filter
+      currentFilter =
+        filter;
+
+      // Render
+      renderWave(20);
+    }
+  );
+
+  // =====================================================
+  // FILTER BUTTON
+  // =====================================================
+
+  const filterBtn =
+    document.getElementById(
+      "genreFilterBtn"
+    );
+
+  if (filterBtn) {
+    filterBtn.onclick =
+      e => {
+        e.stopPropagation();
+
+        document
+          .getElementById(
+            "dtGenreDropdown"
+          )
+          ?.classList.toggle(
+            "open"
+          );
+      };
+  }
+
+  // =====================================================
+  // GENRE DROPDOWN
+  // =====================================================
+
+  if (
+    !document.getElementById(
+      "dtGenreDropdown"
+    )
+  ) {
+    const dd =
+      document.createElement(
+        "div"
+      );
+
+    dd.id =
+      "dtGenreDropdown";
+
+    dd.className =
+      "dt-genre-dropdown";
+
+    dd.innerHTML = `
+      <div
+        class="dt-genre-head"
+      >
+        FILTER BY GENRE
+      </div>
+
+      ${genres
+        .map(
+          g => `
+            <button
+              data-g="${String(
+                g
+              ).toLowerCase()}"
+            >
+              ${g}
+            </button>
+          `
+        )
+        .join("")}
+
+      <button
+        class="dt-close"
+      >
+        Close
+      </button>
+    `;
+
+    dd.onclick = e => {
+      const b =
+        e.target.closest(
+          "[data-g]"
+        );
+
+      if (b) {
+        currentFilter =
+          b.dataset.g;
+
+        mount
+          .querySelectorAll(
+            ".dt-pills-scroll .pill"
+          )
+          .forEach(p =>
+            p.classList.remove(
+              "active"
+            )
+          );
+
+        const m =
+          mount.querySelector(
+            `[data-g="${currentFilter}"]`
+          );
+
+        if (m) {
+          m.classList.add(
+            "active"
+          );
+        }
+
+        renderWave(20);
+
+        dd.classList.remove(
+          "open"
+        );
+      }
+
+      if (
+        e.target.closest(
+          ".dt-close"
+        )
+      ) {
+        dd.classList.remove(
+          "open"
+        );
+      }
+    };
+
+    document.body.appendChild(
+      dd
+    );
+  }
+
+  injectArsenalStyles();
+
+  // IMPORTANT:
+  // Setup after pills have been created.
+  setupPillsDragScroll(
+    scroll
+  );
+}
+
+// =====================================================
+// FIXED PILL DRAG / CLICK
+// =====================================================
+
+function setupPillsDragScroll(
+  list
+) {
+  if (!list) return;
+
+  if (
+    list.dataset.dragInit ===
+    "1"
+  ) {
+    return;
+  }
+
+  list.dataset.dragInit =
+    "1";
+
+  let isDown = false;
+  let startX = 0;
+  let startScroll = 0;
+  let moved = false;
+
+  // =====================================================
+  // WHEEL
+  // =====================================================
+
+  list.addEventListener(
+    "wheel",
+    e => {
+      if (
+        list.scrollWidth <=
+        list.clientWidth
+      ) {
+        return;
+      }
+
+      const delta =
+        Math.abs(
+          e.deltaY
+        ) >
+        Math.abs(
+          e.deltaX
+        )
+          ? e.deltaY
+          : e.deltaX;
+
+      if (!delta) return;
+
+      e.preventDefault();
+
+      list.scrollLeft +=
+        delta;
+    },
+    {
+      passive: false
+    }
+  );
+
+  // =====================================================
+  // POINTER DOWN
+  // =====================================================
+
+  list.addEventListener(
+    "pointerdown",
+    e => {
+      // Only left mouse button
+      if (
+        e.pointerType ===
+          "mouse" &&
+        e.button !== 0
+      ) {
+        return;
+      }
+
+      isDown = true;
+      moved = false;
+
+      startX =
+        e.clientX;
+
+      startScroll =
+        list.scrollLeft;
+
+      list.dataset.hasDragged =
+        "0";
+
+      if (
+        e.pointerType ===
+        "mouse"
+      ) {
+        list.classList.add(
+          "dragging"
+        );
+      }
+    }
+  );
+
+  // =====================================================
+  // POINTER MOVE
+  // =====================================================
+
+  list.addEventListener(
+    "pointermove",
+    e => {
+      if (!isDown) return;
+
+      const dx =
+        e.clientX -
+        startX;
+
+      // 7px threshold
+      if (
+        Math.abs(dx) >
+        7
+      ) {
+        moved = true;
+
+        list.dataset.hasDragged =
+          "1";
+      }
+
+      if (moved) {
+        list.scrollLeft =
+          startScroll -
+          dx * 1.25;
+      }
+    }
+  );
+
+  // =====================================================
+  // POINTER UP
+  // =====================================================
+
+  list.addEventListener(
+    "pointerup",
+    () => {
+      if (!isDown) return;
+
+      isDown = false;
+
+      list.classList.remove(
+        "dragging"
+      );
+
+      if (moved) {
+        list.dataset.hasDragged =
+          "1";
+
+        setTimeout(
+          () => {
+            list.dataset.hasDragged =
+              "0";
+          },
+          80
+        );
+      } else {
+        list.dataset.hasDragged =
+          "0";
+      }
+
+      moved = false;
+    }
+  );
+
+  // =====================================================
+  // POINTER CANCEL
+  // =====================================================
+
+  list.addEventListener(
+    "pointercancel",
+    () => {
+      isDown = false;
+      moved = false;
+
+      list.classList.remove(
+        "dragging"
+      );
+
+      list.dataset.hasDragged =
+        "0";
+    }
+  );
+
+  // =====================================================
+  // MAKE SURE PILLS STAY CLICKABLE
+  // =====================================================
+
+  list
+    .querySelectorAll(
+      ".pill"
+    )
+    .forEach(pill => {
+      pill.style.pointerEvents =
+        "auto";
+    });
+}
+
+// =====================================================
+// ARSENAL STYLES
+// =====================================================
+
+function injectArsenalStyles() {
+  if (
+    document.getElementById(
+      "dt-arsenal-fix"
+    )
+  ) {
+    return;
+  }
+
+  const s =
+    document.createElement(
+      "style"
+    );
+
+  s.id =
+    "dt-arsenal-fix";
+
+  s.textContent = `
+
+  /* ===============================
+     PILLS MOUNT
+     =============================== */
+
+  #pillsMount{
+    display:flex!important;
+    align-items:center!important;
+    gap:10px!important;
+    margin-bottom:22px!important;
+    overflow:visible!important;
+    padding:10px 2px 14px!important;
+    margin-top:4px!important;
+    box-sizing:border-box!important;
+  }
+
+  /* ===============================
+     PILLS SCROLL
+     =============================== */
+
+  .dt-pills-scroll{
+    display:flex!important;
+    align-items:center!important;
+    gap:8px!important;
+    flex:1!important;
+    min-width:0!important;
+
+    overflow-x:auto!important;
+    overflow-y:visible!important;
+
+    scrollbar-width:none!important;
+    -ms-overflow-style:none!important;
+
+    cursor:grab!important;
+
+    padding:6px 0!important;
+
+    white-space:nowrap!important;
+
+    touch-action:pan-y!important;
+
+    user-select:none!important;
+  }
+
+  .dt-pills-scroll::-webkit-scrollbar{
+    display:none!important;
+  }
+
+  .dt-pills-scroll.dragging{
+    cursor:grabbing!important;
+    user-select:none!important;
+  }
+
+  /*
+   IMPORTANT:
+   Pills remain pointer-events:auto
+   even while dragging.
+  */
+
+  .dt-pills-scroll.dragging .pill{
+    pointer-events:auto!important;
+  }
+
+  .dt-pills-scroll .pill{
+    flex:0 0 auto!important;
+    white-space:nowrap!important;
+    position:relative!important;
+    z-index:1!important;
+    pointer-events:auto!important;
+    cursor:pointer!important;
+  }
+
+  .dt-pills-scroll .pill.active{
+    background:#FF1E3C!important;
+    color:#fff!important;
+    border-color:#FF1E3C!important;
+    box-shadow:
+      0 0 12px
+      rgba(255,30,60,.4)!important;
+    z-index:3!important;
+  }
+
+  /* ===============================
+     DIVIDER
+     =============================== */
+
+  .dt-pills-divider{
+    width:1px!important;
+    height:20px!important;
+    background:
+      rgba(255,255,255,.08)!important;
+    flex-shrink:0!important;
+  }
+
+  /* ===============================
+     FILTER BUTTON
+     =============================== */
+
+  .filter-btn{
+    background:
+      rgba(10,25,49,.9)!important;
+
+    border-color:
+      rgba(255,30,60,.25)!important;
+
+    color:#fff!important;
+
+    font-weight:700!important;
+
+    flex:0 0 auto!important;
+
+    cursor:pointer!important;
+  }
+
+  .filter-btn:hover{
+    background:#0A1931!important;
+  }
+
+  /* ===============================
+     INNER
+     =============================== */
+
+  .arsenal-inner{
+    padding:
+      12px 16px 24px!important;
+
+    box-sizing:border-box!important;
+  }
+
+  /* ===============================
+     WAVE LIST
+     =============================== */
+
+  #waveList,
+  .wave-list{
+    padding:
+      0 4px!important;
+
+    display:flex!important;
+
+    flex-direction:column!important;
+
+    gap:12px!important;
+  }
+
+  /* ===============================
+     WAVE ROW
+     =============================== */
+
+  .wave-row{
+    width:100%!important;
+
+    padding:
+      16px 20px!important;
+
+    min-height:82px!important;
+
+    gap:18px!important;
+
+    overflow:visible!important;
+
+    position:relative!important;
+
+    z-index:1!important;
+
+    background:
+      rgba(10,25,49,.92)!important;
+
+    border:
+      1px solid
+      rgba(255,255,255,.08)!important;
+
+    border-radius:14px!important;
+  }
+
+  .wave-row:has(
+    .dt-row-menu.active
+  ){
+    z-index:50!important;
+  }
+
+  /* ===============================
+     COVER
+     =============================== */
+
+  .wave-left{
+    flex:
+      0 0 46px!important;
+
+    width:46px!important;
+    height:46px!important;
+  }
+
+  .wave-cover-wrap{
+    width:46px!important;
+    height:46px!important;
+
+    border-radius:8px!important;
+
+    overflow:hidden!important;
+  }
+
+  /* ===============================
+     INFO
+     =============================== */
+
+  .wave-info{
+    flex:
+      0 0 145px!important;
+
+    min-width:0!important;
+
+    overflow:hidden!important;
+  }
+
+  /* ===============================
+     WAVE
+     =============================== */
+
+  .wave-bar{
+    flex:
+      1 1 0!important;
+
+    min-width:80px!important;
+
+    height:38px!important;
+
+    display:flex!important;
+  }
+
+  /* ===============================
+     ACTIONS
+     =============================== */
+
+  .wave-actions{
+    margin-left:auto!important;
+
+    flex-shrink:0!important;
+
+    display:flex!important;
+
+    align-items:center!important;
+
+    gap:8px!important;
+  }
+
+  /* ===============================
+     DOTS
+     =============================== */
+
+  .dt-dots-wrap{
+    position:relative!important;
+    z-index:2!important;
+  }
+
+  .wave-dots{
+    width:32px!important;
+    height:32px!important;
+
+    border-radius:8px!important;
+
+    border:
+      1px solid
+      rgba(255,255,255,.08)!important;
+
+    background:
+      rgba(255,255,255,.06)!important;
+
+    color:
+      rgba(255,255,255,.7)!important;
+
+    display:grid!important;
+
+    place-items:center!important;
+
+    cursor:pointer!important;
+  }
+
+  .wave-dots:hover{
+    background:#fff!important;
+    color:#000!important;
+  }
+
+  /* ===============================
+     ROW MENU
+     =============================== */
+
+  .dt-row-menu{
+    position:absolute!important;
+
+    right:0!important;
+    top:38px!important;
+
+    min-width:220px!important;
+
+    background:#0A1931!important;
+
+    border:
+      1px solid
+      rgba(255,255,255,.1)!important;
+
+    border-radius:12px!important;
+
+    padding:6px!important;
+
+    display:none!important;
+
+    flex-direction:column!important;
+
+    gap:2px!important;
+
+    z-index:9999!important;
+
+    box-shadow:
+      0 10px 30px
+      rgba(0,0,0,.7)!important;
+  }
+
+  .dt-row-menu.active{
+    display:flex!important;
+  }
+
+  .dt-row-menu button{
+    text-align:left!important;
+
+    padding:
+      10px 12px!important;
+
+    border-radius:8px!important;
+
+    border:0!important;
+
+    background:transparent!important;
+
+    color:#fff!important;
+
+    font-size:13px!important;
+
+    cursor:pointer!important;
+  }
+
+  .dt-row-menu button:hover{
+    background:
+      rgba(255,30,60,.12)!important;
+
+    color:#FF1E3C!important;
+  }
+
+  /* ===============================
+     GENRE DROPDOWN
+     =============================== */
+
+  .dt-genre-dropdown{
+    position:fixed!important;
+
+    right:16px!important;
+    top:80px!important;
+
+    width:280px!important;
+
+    max-height:70vh!important;
+
+    overflow:auto!important;
+
+    background:#050A14!important;
+
+    border:
+      1px solid
+      rgba(255,255,255,.1)!important;
+
+    border-radius:14px!important;
+
+    padding:8px!important;
+
+    display:none!important;
+
+    z-index:999!important;
+  }
+
+  .dt-genre-dropdown.open{
+    display:block!important;
+  }
+
+  .dt-genre-head{
+    font-size:11px!important;
+
+    letter-spacing:2px!important;
+
+    color:#9CA3AF!important;
+
+    padding:8px!important;
+  }
+
+  .dt-genre-dropdown
+  button[data-g]{
+    width:100%!important;
+
+    text-align:left!important;
+
+    padding:
+      10px 12px!important;
+
+    border-radius:8px!important;
+
+    border:0!important;
+
+    background:transparent!important;
+
+    color:#fff!important;
+
+    cursor:pointer!important;
+  }
+
+  .dt-genre-dropdown
+  button[data-g]:hover{
+    background:
+      rgba(255,30,60,.12)!important;
+
+    color:#FF1E3C!important;
+  }
+
+  .dt-close{
+    width:100%!important;
+
+    margin-top:8px!important;
+
+    padding:8px!important;
+
+    border-radius:8px!important;
+
+    border:
+      1px solid
+      rgba(255,255,255,.1)!important;
+
+    background:
+      rgba(255,255,255,.06)!important;
+
+    color:#fff!important;
+
+    cursor:pointer!important;
+  }
+
+  /* ===============================
+     BUY
+     =============================== */
+
+  .wave-buy{
+    min-width:86px!important;
+
+    height:32px!important;
+
+    padding:
+      0 14px!important;
+
+    border-radius:8px!important;
+
+    border:
+      1px solid
+      rgba(255,255,255,.1)!important;
+
+    background:#fff!important;
+
+    color:#000!important;
+
+    font-weight:800!important;
+
+    font-size:13px!important;
+
+    cursor:pointer!important;
+  }
+
+  .wave-buy.is-free{
+    background:#FF1E3C!important;
+
+    color:#fff!important;
+
+    border-color:#FF1E3C!important;
+  }
+
+  `;
+
+  document.head.appendChild(
+    s
+  );
+}
+
+// =====================================================
+// DOWNLOAD
+// =====================================================
+
+async function downloadBeat(
+  beat
+) {
+  if (!isSignedIn()) {
+    alert("Login");
+    return;
+  }
+
+  try {
+    const r =
+      await fetch(
+        `${STATS_API}/api/download?id=${beat.id}`
+      );
+
+    if (!r.ok) {
+      throw new Error();
+    }
+
+    const blob =
+      await r.blob();
+
+    const url =
+      URL.createObjectURL(
+        blob
+      );
+
+    const a =
+      document.createElement(
+        "a"
+      );
+
+    a.href = url;
+
+    a.download =
+      `${beat.title}.mp3`;
+
+    a.click();
+
+    setTimeout(
+      () =>
+        URL.revokeObjectURL(
+          url
+        ),
+      1000
+    );
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// =====================================================
+// BUY
+// =====================================================
+
+function buyBeat(
+  beat
+) {
+  let cart;
+
+  try {
+    cart =
+      JSON.parse(
+        localStorage.getItem(
+          "dopetone_cart"
+        ) || "[]"
+      );
+  } catch {
+    cart = [];
+  }
+
+  if (
+    !cart.some(
+      x =>
+        String(x.id) ===
+        String(beat.id)
+    )
+  ) {
+    cart.push(beat);
+
+    localStorage.setItem(
+      "dopetone_cart",
+      JSON.stringify(cart)
+    );
+  }
+
+  location.href =
+    `licence-page.html?id=${beat.id}`;
+}
+
+// =====================================================
+// RENDER ARSENAL
+// =====================================================
+
+export function renderBeatsArsenal() {
+  return `
+    <div class="arsenal-inner">
+
+      <div class="view-toggle">
+
+        <div class="toggle-fixed">
+
+          <h2
+            class="arsenal-bar-title"
+          >
+            ARSENAL
+          </h2>
+
+          <div
+            class="pills-scroll"
+            id="pillsMount"
+          ></div>
+
+        </div>
+
+      </div>
+
+      <div
+        id="waveList"
+        class="wave-list"
+      ></div>
+
+    </div>
+  `;
+}
+
+// =====================================================
+// INIT
+// =====================================================
+
+export function initBeatsArsenal() {
+  injectPills();
+
+  renderWave();
+
+  injectArsenalStyles();
+}
+
+window.renderWave =
+  renderWave;
+
+// =====================================================
+// AUDIO / WAVE SYNC
+// =====================================================
+
+(function () {
+
+  let ticking = false;
+
+  const getAudio = () =>
+    document.querySelector(
+      "audio"
+    ) ||
+    window.__DT_AUDIO__;
+
+  function sync() {
+    ticking = false;
+
+    const a =
+      getAudio();
+
+    if (
+      !a ||
+      a.paused ||
+      !a.duration ||
+      !window.__CURRENT_BEAT__?.id
+    ) {
+      return;
+    }
+
+    const p =
+      a.currentTime /
+      a.duration;
+
+    document
+      .querySelectorAll(
+        ".wave-row"
+      )
+      .forEach(row => {
+
+        if (
+          String(
+            row.dataset.beatId
+          ) !==
+          String(
+            window.__CURRENT_BEAT__.id
+          )
+        ) {
+          return;
+        }
+
+        const w =
+          row.__wave;
+
+        if (w) {
+          w.seekTo(p);
+        }
+
+      });
+  }
+
+  function req() {
+    if (ticking) return;
+
+    ticking = true;
+
+    requestAnimationFrame(
+      sync
+    );
+  }
+
+  [
+    "timeupdate",
+    "play",
+    "pause",
+    "seeked"
+  ].forEach(ev => {
+    document.addEventListener(
+      ev,
+      req,
+      true
+    );
   });
+
+  // =====================================================
+  // WAVE CLICK / SEEK
+  // =====================================================
+
+  document.addEventListener(
+    "click",
+    e => {
+
+      const bar =
+        e.target.closest(
+          ".wave-bar"
+        );
+
+      if (!bar) return;
+
+      const a =
+        getAudio();
+
+      if (!a?.duration) return;
+
+      const r =
+        bar.getBoundingClientRect();
+
+      const pr =
+        Math.max(
+          0,
+          Math.min(
+            1,
+            (e.clientX -
+              r.left) /
+              r.width
+          )
+        );
+
+      a.currentTime =
+        pr *
+        a.duration;
+
+      req();
+    }
+  );
+
 })();

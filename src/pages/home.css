@@ -1,0 +1,69 @@
+#pillsMount{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-bottom:22px;
+}
+
+
+/* NOTICE INPUT - FIX */
+.ntg-input{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:16px;
+  background:rgba(0,0,0,0.4);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:14px;
+  padding:6px 6px 6px 16px;
+}
+#noticeBoardInput{
+  flex:1;
+  background:transparent !important;
+  border:none !important;
+  padding:10px 0;
+  color:#fff;
+  font-size:13px;
+  outline:none;
+  width:100%;
+}
+#noticeBoardInput::placeholder{
+  color:rgba(255,255,255,0.45);
+}
+#noticeBoardSend{
+  width:36px;
+  height:36px;
+  min-width:36px;
+  border-radius:10px;
+  background:#FF1E3C;
+  border:none;
+  color:#fff;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  font-size:16px;
+}
+
+#pillsMount{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  flex-direction:row!important;
+  gap:10px!important;
+  margin-bottom:22px!important;
+  overflow-x:auto!important;
+  overflow-y:visible!important;
+  padding:8px 0 12px!important;
+  scrollbar-width:none!important;
+  -ms-overflow-style:none!important;
+  cursor:grab!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  white-space:nowrap!important;
+  max-width:100%!important;
+}
+#pillsMount::-webkit-scrollbar{ display:none!important; }
+#pillsMount.dragging{ cursor:grabbing!important; }
+#pillsMount .pill{
+  flex:0 0 auto!important;
+  white-space:nowrap!important;
+}
