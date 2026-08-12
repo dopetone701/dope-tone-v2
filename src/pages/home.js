@@ -87,3 +87,6 @@ try{ renderWave(10); initBeatsArsenal(); }catch(e){ console.warn('arsenal', e) }
     }catch{}
   }, 100);
 }
+
+
+

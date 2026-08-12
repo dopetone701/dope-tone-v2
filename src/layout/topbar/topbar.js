@@ -269,6 +269,41 @@ export function initTopbar(){
   #topbar .auth-buttons{ margin-left:auto!important; }
 }
 
+
+
+  .nav-icon-btn.cart-desktop{
+      width:40px; height:40px; border-radius:12px; position:relative;
+      background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border:1px solid rgba(255,255,255,0.12); display:grid; place-items:center; cursor:pointer;
+    }
+   .avatar-btn{
+      width:40px; height:40px; border-radius:50%; padding:0; overflow:hidden; position:relative;
+      border:2px solid transparent;
+      background:linear-gradient(#0A1931,#0A1931) padding-box, linear-gradient(135deg,#FF1E3C,#60B5FF) border-box;
+      cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,0.5);
+    }
+   
+   .avatar-btn:hover::after{ opacity:1; }
+   .cart-count{
+      position:absolute; top:-6px; right:-6px; min-width:19px; height:19px;
+      background:#FF1E3C; color:#fff; font-size:10px; font-weight:900;
+      border-radius:999px; display:grid; place-items:center; border:1.5px solid #0A1931;
+    }
+    /* PRO DROPDOWN */
+    #userPanel{
+      position:absolute; top:58px; right:0; width:300px; z-index:9999;
+      background:linear-gradient(180deg, rgba(15,36,70,0.97), rgba(5,10,20,0.98));
+      backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.12);
+      border-radius:18px; padding:12px; box-shadow:0 20px 60px rgba(0,0,0,.7);
+      opacity:0; transform:translateY(-8px) scale(.98); pointer-events:none; transition:.25s;
+    }
+    #userPanel.active{ opacity:1; transform:none; pointer-events:auto; }
+    #userPanel button,#userPanel a{
+      width:100%; padding:11px 12px; border-radius:12px; border:1px solid transparent;
+      background:rgba(255,255,255,.05); color:#E5E7EB; display:flex; gap:10px; cursor:pointer; margin-bottom:6px;
+    }
+    #userPanel button:hover{ background:rgba(255,255,255,.1); color:#fff; }
+
   </style>
 
   <div class="top-inner">
@@ -283,12 +318,16 @@ export function initTopbar(){
           <i>VAULT • STUDIO</i>
         </div>
       </a>
-      <nav class="nav-links-v2">
-        <a href="#beats" data-route="/beats">Beats</a>
-        <a href="#samples" data-route="/samples">Samples</a>
-        <a href="#packs" data-route="/packs">Packs</a>
-        <a href="#tools" data-route="/tools">Free Tools</a>
-      </nav>
+      
+
+<nav class="nav-links-v2">
+  <a href="#/beats" data-route="beats">Beats</a>
+  <a href="#/vault?tab=samples" data-route="vault?tab=samples">Samples</a>
+  <a href="#/vault?tab=packs" data-route="vault?tab=packs">Packs</a>
+  <a href="#/vault?tab=free" data-route="vault?tab=free">Free Tools</a>
+</nav>
+
+
     </div>
 
     <div class="top-center">
@@ -308,6 +347,7 @@ export function initTopbar(){
         </button>
       </div>
       <button id="rightToggle" class="right-toggle-btn"><span class="dot"></span> QUEUE</button>
+      
     </div>
   </div>
 
@@ -316,11 +356,12 @@ export function initTopbar(){
     <button type="button" class="panel-close" id="panelCloseBtn">✕</button>
     <img src="public/images/logo.png" class="panel-logo" alt="Dope Tone" onerror="this.src='images/logo.png'">
     <nav class="panel-links">
-      <a href="#beats" data-route="/beats">Beats</a>
-      <a href="#samples" data-route="/samples">Samples</a>
-      <a href="#packs" data-route="/packs">Packs</a>
-      <a href="#tools" data-route="/tools">Free Tools</a>
-      <a href="/beats" data-link data-route="/beats">All Beats</a>
+      <a href="#/beats" data-route="beats">Beats</a>
+<a href="#/vault?tab=samples" data-route="vault?tab=samples">Samples</a>
+<a href="#/vault?tab=packs" data-route="vault?tab=packs">Packs</a>
+<a href="#/vault?tab=free" data-route="vault?tab=free">Free Tools</a>
+
+
       <div class="panel-profile">
         <button type="button" id="mobileProfileBtn">
           <img id="mobileProfileAvatar" src="public/images/default-user.png" alt="">
@@ -373,35 +414,63 @@ export function initTopbar(){
   };
 
   const navOverlay = document.getElementById('navOverlay');
-  const navPanel = document.getElementById('navPanel');
-  const menuToggle = document.getElementById('menuToggle');
-  const panelClose = document.getElementById('panelCloseBtn');
-  const openNav = () => { navPanel.classList.add('active'); navOverlay.classList.add('active'); document.body.classList.add('panel-open'); };
-  const closeNav = () => { navPanel.classList.remove('active'); navOverlay.classList.remove('active'); document.body.classList.remove('panel-open'); };
-  if(menuToggle) menuToggle.onclick = openNav;
-  if(panelClose) panelClose.onclick = closeNav;
-  if(navOverlay) navOverlay.onclick = closeNav;
+const navPanel = document.getElementById('navPanel');
+const menuToggle = document.getElementById('menuToggle');
+const panelClose = document.getElementById('panelCloseBtn');
+const openNav = () => { navPanel?.classList.add('active'); navOverlay?.classList.add('active'); document.body.classList.add('panel-open'); document.getElementById('userPanel')?.classList.remove('active'); };
+const closeNav = () => { navPanel?.classList.remove('active'); navOverlay?.classList.remove('active'); document.body.classList.remove('panel-open'); };
+if(menuToggle) menuToggle.onclick = openNav;
+if(panelClose) panelClose.onclick = closeNav;
+if(navOverlay) navOverlay.onclick = closeNav;
 
-  document.getElementById('loginBtn')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('auth:login')));
-  document.getElementById('signupBtn')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('auth:signup')));
-  document.getElementById('accountBtn')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('auth:account')));
-  document.getElementById('mobileProfileBtn')?.addEventListener('click', () => { closeNav(); const isGuest = document.getElementById('authGuest').style.display !== 'none'; window.dispatchEvent(new CustomEvent(isGuest ? 'auth:login' : 'auth:account')); });
-  document.getElementById('cartBtn')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('cart:open')));
-  document.getElementById('mobileCartBtn')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('cart:open')));
+const getAuth = () => window.Auth;
+document.getElementById('loginBtn').onclick = (e) => { e.preventDefault(); e.stopPropagation(); getAuth()?.openModal(false); };
+document.getElementById('signupBtn').onclick = (e) => { e.preventDefault(); e.stopPropagation(); getAuth()?.openModal(true); };
+
+// AVATAR ONLY
+document.getElementById('accountBtn').onclick = (e) => {
+  e.preventDefault(); e.stopPropagation(); closeNav();
+  document.getElementById('userPanel')?.classList.toggle('active');
+};
+// CART ONLY
+document.getElementById('cartBtn').onclick = (e) => {
+  e.preventDefault(); e.stopPropagation();
+  document.getElementById('userPanel')?.classList.remove('active'); closeNav();
+  location.hash = '#/cart';
+};
+document.getElementById('mobileCartBtn').onclick = (e) => {
+  e.preventDefault(); e.stopPropagation();
+  document.getElementById('userPanel')?.classList.remove('active'); closeNav();
+  location.hash = '#/cart';
+};
+document.getElementById('mobileProfileBtn').onclick = (e) => {
+  e.preventDefault(); e.stopPropagation(); closeNav();
+  const isGuest = document.getElementById('authGuest')?.style.display!== 'none';
+  if(isGuest) getAuth()?.openModal(false);
+  else setTimeout(()=>document.getElementById('userPanel')?.classList.add('active'), 250);
+};
+// close on outside click
+document.addEventListener('click', (e)=>{
+  const p=document.getElementById('userPanel'), a=document.getElementById('accountBtn'), c=document.getElementById('cartBtn');
+  if(p &&!p.contains(e.target) &&!a.contains(e.target) &&!c?.contains(e.target)) p.classList.remove('active');
+});
+
 
   document.getElementById('globalSearch')?.addEventListener('input', e => {
     window.dispatchEvent(new CustomEvent('search:query',{detail:e.target.value.toLowerCase()}));
   });
 
+   // SURGICAL HASH ROUTER FIX
   document.querySelectorAll('[data-route]').forEach(a => {
     a.addEventListener('click', (e) => {
       e.preventDefault();
-      const path = a.getAttribute('data-route');
-      window.history.pushState({}, '', path);
-      window.dispatchEvent(new CustomEvent('route:change',{detail:path}));
-      if(window.innerWidth <= 1024) closeNav();
+      const route = a.getAttribute('data-route');
+      const hash = route === '/'? '#/' : `#/${route.replace(/^\//,'')}`;
+      location.hash = hash;
+      closeNav();
     });
   });
+
 
   const checkMobile = () => {
     const rb = document.getElementById('rightToggle');
@@ -416,6 +485,16 @@ export function initTopbar(){
   };
   checkMobile();
   window.addEventListener('resize', checkMobile);
+
+   function setActiveLink(){
+    const cur = (location.hash.replace('#/','')||'/').split('?')[0];
+    document.querySelectorAll('.nav-links-v2 a').forEach(link=>{
+      link.classList.toggle('active', link.dataset.route===cur || (cur===''&&link.dataset.route==='/'));
+    });
+  }
+  window.addEventListener('hashchange', setActiveLink);
+  setActiveLink();
+
 
   if(localStorage.getItem('dt_left') === 'true' && window.innerWidth > 1024) left.classList.add('collapsed');
   if(localStorage.getItem('dt_right') === 'true' && right) right.classList.add('collapsed');
@@ -436,5 +515,97 @@ export function initTopbar(){
       if(mn) mn.textContent = user.name || 'User';
       if(ms) ms.textContent = user.sub || 'Pro Member';
     }
+
+     // === SURGICAL FIX - TURN LOGIN TO AVATAR ===
+  const refreshTopbarAuth = () => {
+    const raw = localStorage.getItem('dopetone_user');
+    const user = raw? JSON.parse(raw) : null;
+    const guest = document.getElementById('authGuest');
+    const userArea = document.getElementById('authUser');
+    if(!guest ||!userArea) return;
+    if(user){
+      guest.style.display = 'none';
+      userArea.style.display = 'flex';
+      const av = user.avatar || 'public/images/default-user.png';
+      const name = user.username || user.email.split('@')[0];
+      const el1 = document.getElementById('userAvatar');
+      const el2 = document.getElementById('mobileProfileAvatar');
+      const el3 = document.getElementById('mobileProfileName');
+      const el4 = document.getElementById('mobileProfileSub');
+      if(el1) el1.src = av;
+      if(el2) el2.src = av;
+      if(el3) el3.textContent = name;
+      if(el4) el4.textContent = user.email;
+
+           // === CC BUTTON LOGIC - ADMIN ONLY ===
+      const ccBtn = document.getElementById('controlCenterBtn');
+      if(ccBtn){
+        const isAdmin = (user.email||'').toLowerCase() === 'dopetone701@gmail.com' || user.role === 'admin';
+        ccBtn.style.display = isAdmin? 'flex' : 'none';
+        ccBtn.onclick = (e)=>{
+          e.preventDefault();
+          e.stopPropagation();
+          if(!isAdmin){ alert('Admin only'); return; }
+          document.getElementById('userPanel')?.classList.remove('active');
+          document.getElementById('navPanel')?.classList.remove('active');
+          document.getElementById('navOverlay')?.classList.remove('active');
+          document.body.classList.remove('panel-open');
+          location.hash = '#/cc/overview';
+        };
+      }
+
+      // update cart
+      try{
+        const uid = localStorage.getItem('dopetone_user_id');
+        const cart = JSON.parse(localStorage.getItem(uid? `dopetone_cart_${uid}` : 'dopetone_cart') || localStorage.getItem('dopetone_cart') || '[]');
+        document.querySelectorAll('.cart-count').forEach(c=>{
+          c.textContent = cart.length;
+          c.style.display = cart.length>0? 'flex' : 'none';
+        });
+      }catch{}
+    } else {
+      guest.style.display = 'flex';
+      userArea.style.display = 'none';
+    }
+
+     // avatar editable
+  const avInput=document.createElement('input'); avInput.type='file'; avInput.accept='image/*'; avInput.style.display='none'; document.body.appendChild(avInput);
+  document.getElementById('accountBtn')?.addEventListener('dblclick',()=>avInput.click());
+  avInput.onchange=()=>{
+    const f=avInput.files[0]; if(!f) return;
+    const r=new FileReader(); r.onload=e=>{
+      const b64=e.target.result;
+      document.getElementById('userAvatar').src=b64;
+      const u=JSON.parse(localStorage.getItem('dopetone_user')||'{}'); u.avatar=b64;
+      localStorage.setItem('dopetone_user',JSON.stringify(u));
+    }; r.readAsDataURL(f);
+  };
+
+  };
+
+  // Run now + on every auth change
+  refreshTopbarAuth();
+  window.addEventListener('storage', refreshTopbarAuth);
+  window.addEventListener('auth:changed', refreshTopbarAuth);
+  window.addEventListener('cartUpdated', refreshTopbarAuth);
+  setInterval(refreshTopbarAuth, 1000); // fallback watcher
+
+  // Override global setAuthState to also use this
+  window.setAuthState = (logged, u) => {
+    refreshTopbarAuth();
+  };
+
   };
 }
+
+
+ document.querySelectorAll('[data-route]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const route = a.getAttribute('data-route');
+      location.hash = route.startsWith('vault') ? `#/${route}` : `#/${route}`;
+      document.getElementById('navPanel')?.classList.remove('active');
+      document.getElementById('navOverlay')?.classList.remove('active');
+      document.body.classList.remove('panel-open');
+    });
+  });

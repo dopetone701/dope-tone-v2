@@ -17,6 +17,10 @@
 @import url('../features/beats/grid.css');
 @import url('../pages/beat-page.css');
 @import url('../pages/vault.css');
+@import url('../pages/playlist-page.css');
+@import url('../features/licence/licence.css');
+@import url('../features/cart/cart.css');
+@import url('../features/auth/auth.css');
 
 
 

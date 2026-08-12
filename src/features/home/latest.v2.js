@@ -1,4 +1,4 @@
-// latest.v2.js - DEBUG VERSION
+// latest.v2.js - HASH ONLY FIXED + GO TO BEAT INJECTED
 import { store } from '../../core/store.js';
 
 const MAX = 10;
@@ -6,13 +6,22 @@ let isDragging = false;
 const PLAY = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>`;
 const PAUSE = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
 
+// INJECTED - GO TO BEAT HASH ONLY
+function goToBeat(beat){
+  if(!beat?.id) return;
+  location.hash = `beat?id=${encodeURIComponent(beat.id)}`;
+}
+function goToBeatsList(){
+  location.hash = `beats`;
+}
+window.goToBeat = goToBeat;
+
 export async function renderLatest(){
   const wrap = document.getElementById('latestWrap');
   const mount = document.getElementById('latestMount');
   if(!mount) { console.error('[LATEST] mount missing'); return; }
 
   const beats = store?.getBeats?.() || window.__BEATS__ || window.DTStore?.beats || [];
-  console.log('[LATEST] beats', beats.length);
   if(!beats.length){ setTimeout(renderLatest,500); return; }
 
   const latest = [...beats].sort((a,b)=>{
@@ -48,50 +57,23 @@ export async function renderLatest(){
     btn.onclick = (e)=>{
       e.stopPropagation();
       e.preventDefault();
-      console.log('[LATEST CLICK]', beat.title, 'id', beat.id);
-      console.log('[LATEST STATE]', 'CURRENT', window.__CURRENT_BEAT__?.id, 'LIST', window.__CURRENT_LIST__, 'AUDIO', !!window.__DT_AUDIO__, 'DTPlayer', !!window.DTPlayer);
-
-      if(isDragging) { console.log('[LATEST] drag block'); return; }
-
+      if(isDragging) return;
       const curId = String(window.__CURRENT_BEAT__?.id||'');
       const curList = window.__CURRENT_LIST__||'';
       const isSame = curId === String(beat.id) && curList === 'latest';
-
       if(isSame){
-        console.log('[LATEST] TOGGLE same track');
-        // TRY EVERY METHOD PLAYER USES
         try{
-          if(window.DTPlayer?.toggle){ 
-            console.log('-> DTPlayer.toggle()'); 
-            window.DTPlayer.toggle(); 
-            return; 
-          }
+          if(window.DTPlayer?.toggle){ window.DTPlayer.toggle(); return; }
           if(window.DTPlayer?.pause && window.DTPlayer?.play){
             const audio = window.DTPlayer.audio || window.__DT_AUDIO__ || document.querySelector('audio');
-            if(audio?.paused){ 
-              console.log('-> DTPlayer.play()'); 
-              window.DTPlayer.play?.(); 
-              audio.play().catch(err=>console.error('play err',err));
-            } else { 
-              console.log('-> DTPlayer.pause()'); 
-              window.DTPlayer.pause?.(); 
-              audio.pause();
-            }
+            if(audio?.paused){ window.DTPlayer.play?.(); audio.play().catch(()=>{}); } else { window.DTPlayer.pause?.(); audio.pause(); }
             return;
           }
           const a = window.__DT_AUDIO__ || window.DTPlayer?.audio || document.querySelector('audio');
-          console.log('[LATEST] audio element', a);
-          if(a){
-            if(a.paused){ a.play().catch(e=>console.error(e)); } else { a.pause(); }
-          } else {
-            console.error('[LATEST] NO AUDIO FOUND');
-          }
+          if(a){ if(a.paused){ a.play().catch(()=>{}); } else { a.pause(); } }
         }catch(err){ console.error('[LATEST] toggle error', err); }
         return;
       }
-
-      // NEW TRACK
-      console.log('[LATEST] NEW TRACK -> switch to latest list');
       window.__CURRENT_LIST__ = 'latest';
       window.__CURRENT_BEATS__ = latest;
       window.__CURRENT_INDEX__ = i;
@@ -99,18 +81,29 @@ export async function renderLatest(){
       localStorage.setItem('dt_list_v2','latest');
       localStorage.setItem('dt_index_v2', String(i));
       localStorage.setItem('dt_queue_v2', JSON.stringify(latest));
-
-      if(window.DTPlayer?.setQueue){
-        console.log('[LATEST] calling setQueue');
-        window.DTPlayer.setQueue(latest, i, true);
-      } else if(window.DTPlayTrack){
-        console.log('[LATEST] calling DTPlayTrack');
-        window.DTPlayTrack(beat, true);
-      } else {
-        console.error('[LATEST] NO PLAYER METHOD');
-      }
+      if(window.DTPlayer?.setQueue){ window.DTPlayer.setQueue(latest, i, true); }
+      else if(window.DTPlayTrack){ window.DTPlayTrack(beat, true); }
       document.dispatchEvent(new CustomEvent('dt:listSwitch', {detail:{listId:'latest'}}));
     };
+
+    // INJECTED - TITLE + DOUBLE CLICK = GO TO BEAT
+    const titleEl = card.querySelector(".rp-title");
+    if(titleEl){
+      titleEl.style.cursor="pointer";
+      titleEl.onclick = e=>{ e.stopPropagation(); if(!isDragging) goToBeat(beat); };
+    }
+    card.addEventListener('dblclick', e=>{
+      if(e.target.closest('.rp-playbtn')) return;
+      e.preventDefault(); if(!isDragging) goToBeat(beat);
+    });
+    // Single click on cover (not play btn) = go to beat if not playing? Keep play on play btn only
+    card.querySelector(".rp-cover").addEventListener('click', e=>{
+      if(e.target.closest('.rp-playbtn')) return;
+      if(isDragging) return;
+      // Let play btn handle play, cover click = go to beat
+      // Uncomment next line if you want cover click to go to beat:
+      // goToBeat(beat);
+    });
 
     scroller.appendChild(card);
   });
@@ -118,7 +111,7 @@ export async function renderLatest(){
   const more = document.createElement('div');
   more.className = 'rp-card more-card';
   more.innerHTML = `<div class="rp-cover more-cover"><div class="more-grid"><div class="more-dot"></div><div class="more-dot"></div><div class="more-dot"></div><div class="more-dot"></div><div class="more-dot"></div><div class="more-dot"></div></div></div><div class="rp-title">View All</div>`;
-  more.onclick = ()=> window.navigateTo? window.navigateTo('/beats') : location.hash='#/beats';
+  more.onclick = ()=> goToBeatsList();
   scroller.appendChild(more);
 
   mount.appendChild(scroller);
@@ -152,11 +145,9 @@ function bindAudioReset(){
   const audio = window.__DT_AUDIO__ || window.DTPlayer?.audio || document.querySelector('audio');
   if(!audio || audio._latestBound) return;
   audio._latestBound = true;
-  console.log('[LATEST] bound to audio', audio);
   audio.addEventListener('play', syncLatest);
   audio.addEventListener('pause', syncLatest);
   audio.addEventListener('ended', ()=>{
-    console.log('[LATEST] ended -> reset');
     document.querySelectorAll('#latestMount .rp-card .rp-icon').forEach(ic=> ic.innerHTML = PLAY);
     document.querySelectorAll('#latestMount .rp-card').forEach(c=>{
       c.classList.remove('is-playing');

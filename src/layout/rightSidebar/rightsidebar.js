@@ -1,21 +1,32 @@
-export function initRight(){
+export function initRight(force = false){
+  const isCC = (location.hash||'').startsWith('#/cc/');
+  if(isCC &&!force) return; // Don't render queue when CC is open - unless forced
   const el=document.getElementById('right-sidebar');
   if(!el) return;
+
+  // Reset CC styles - THIS FIXES OVERPOWERING
+  el.style.width = '';
+  el.style.minWidth = '';
+  el.style.maxWidth = '';
+  el.style.background = '';
+  el.style.borderLeft = '';
+  el.style.zIndex = '';
+  el.style.display = '';
 
   el.innerHTML=`
   <style id="queue-eq-style">
     @keyframes qeq1 { 0%,100%{height:4px} 50%{height:12px} }
     @keyframes qeq2 { 0%,100%{height:10px} 50%{height:3px} }
     @keyframes qeq3 { 0%,100%{height:6px} 50%{height:14px} }
-   .queue-eq { display:flex; gap:2px; align-items:end; width:16px; height:14px; }
-   .queue-eq span{ width:3px; background:#FF1E3C; border-radius:99px; display:block; }
-   .queue-eq span:nth-child(1){ animation: qeq1 0.6s infinite ease-in-out; }
-   .queue-eq span:nth-child(2){ animation: qeq2 0.6s infinite ease-in-out 0.2s; }
-   .queue-eq span:nth-child(3){ animation: qeq3 0.6s infinite ease-in-out 0.4s; }
-   .queue-item{ display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px; cursor:pointer; margin-bottom:4px; transition: all.2s; border:1px solid transparent; }
-   .queue-item:hover{ background: rgba(255,255,255,0.06); }
-   .queue-item.is-active{ background: rgba(255,30,60,0.12)!important; border-color: rgba(255,30,60,0.25)!important; }
-   .queue-item.is-active.q-title{ color:#fff!important; font-weight:700!important; }
+  .queue-eq { display:flex; gap:2px; align-items:end; width:16px; height:14px; }
+  .queue-eq span{ width:3px; background:#FF1E3C; border-radius:99px; display:block; }
+  .queue-eq span:nth-child(1){ animation: qeq1 0.6s infinite ease-in-out; }
+  .queue-eq span:nth-child(2){ animation: qeq2 0.6s infinite ease-in-out 0.2s; }
+  .queue-eq span:nth-child(3){ animation: qeq3 0.6s infinite ease-in-out 0.4s; }
+  .queue-item{ display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px; cursor:pointer; margin-bottom:4px; transition: all.2s; border:1px solid transparent; }
+  .queue-item:hover{ background: rgba(255,255,255,0.06); }
+  .queue-item.is-active{ background: rgba(255,30,60,0.12)!important; border-color: rgba(255,30,60,0.25)!important; }
+  .queue-item.is-active.q-title{ color:#fff!important; font-weight:700!important; }
   </style>
   <div style="display:flex;flex-direction:column;height:100%;padding:0">
     <div style="padding:16px 16px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08)">
@@ -30,7 +41,7 @@ export function initRight(){
           <div id="qTitle" style="color:white;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
           <div id="qMeta" style="color:#9CA3AF;font-size:11px;margin-top:2px"></div>
         </div>
-        <div id="qEq" class="queue-eq" style="display:none"><span></span><span></span></div>
+        <div id="qEq" class="queue-eq" style="display:none"><span></span><span></span><span></span></div>
       </div>
     </div>
     <div id="rightContent" style="flex:1;overflow-y:auto;padding:8px">
@@ -70,7 +81,6 @@ export function initRight(){
       </div>`;
     }).join('');
 
-    // keep active in view
     const activeEl = listEl.querySelector('.queue-item.is-active');
     if(activeEl){
       activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -102,11 +112,9 @@ export function initRight(){
     }
   }
 
-  // SYNC TO SECTION
   window.syncQueueToSection = function(list, listId, activeIndex = 0){
     if(!list?.length) return;
     const currentId = getCurrentId();
-    // if same beat exists in new list, keep its position
     let keepIdx = activeIndex;
     if(currentId){
       const found = list.findIndex(b=> String(b.id) === currentId);
@@ -123,7 +131,6 @@ export function initRight(){
     renderQueue();
   };
 
-  // EVENTS - selector stays
   document.addEventListener('playerPlay', e => {
     const idx = e.detail?.index?? window.__CURRENT_INDEX__?? 0;
     if(window.DTPlayer) window.DTPlayer.index = idx;
@@ -155,7 +162,6 @@ export function initRight(){
     };
   }
 
-  // AUDIO EVENTS FOR EQ
   const audio = window.__DT_AUDIO__;
   if(audio){
     audio.addEventListener('play', renderQueue);
@@ -166,3 +172,4 @@ export function initRight(){
   if(window.__CURRENT_BEAT__) updateNowPlaying(window.__CURRENT_BEAT__);
   window.__renderQueue = renderQueue;
 }
+window.initRight = initRight;

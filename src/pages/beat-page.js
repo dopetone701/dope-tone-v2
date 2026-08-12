@@ -1,4 +1,5 @@
-// src/pages/beat-page.js - V5 SPOTIFY PRO - RESTORED DOMINANT COLOR - NO COVER PLAY - NO UPPER SHARE
+// src/pages/beat-page.js - V6 HASH ONLY - FIXED ID
+
 const PLAY_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5.14v13.72L19 12 8 5.14z"/></svg>`;
 const PAUSE_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M7 5h4v14H7V5zm6 0h4v14h-4V5z"/></svg>`;
 const HEART_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
@@ -8,7 +9,21 @@ const DOTS_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height
 
 function escapeHTML(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 function fixPrice(v){ let p=Number(v); if(!Number.isFinite(p)) return 29.99; if(p>=1000) p/=100; return Number(p.toFixed(2)); }
-function getId(){ const full=location.hash+location.search; const m=full.match(/id=([^&]+)/); return m?decodeURIComponent(m[1]):null; }
+
+// FIXED - Gets ID from HASH query string
+function getId(){
+  const hash = location.hash || '';
+  // hash is like #/beat?id=xxx or #/beat? id=xxx
+  const queryPart = hash.split('?')[1] || '';
+  const params = new URLSearchParams(queryPart);
+  let id = params.get('id');
+  if(id) return decodeURIComponent(id);
+  // Fallback: also check location.search for non-hash mode
+  const searchParams = new URLSearchParams(location.search);
+  id = searchParams.get('id');
+  return id? decodeURIComponent(id) : null;
+}
+
 function getGlobalBeats(){ return window.__BEATS__ || window.DTStore?.beats || window.store?.beats || []; }
 function getLikes(){ try{return JSON.parse(localStorage.getItem("dopetone_likes")||"[]")}catch{return []} }
 function saveLikes(a){ localStorage.setItem("dopetone_likes", JSON.stringify(a)); }
@@ -70,7 +85,12 @@ export async function initBeatPage(){
   }
 
   if(!id){
-    mount.innerHTML=`<div style="padding:60px;color:#fff">No ID</div>`;
+    mount.innerHTML=`<div style="padding:60px;color:#fff">
+      <h3>No ID Found</h3>
+      <p>URL: ${escapeHTML(location.hash)}</p>
+      <p>You navigated to #/beat without id. Go back to beats and click a beat.</p>
+      <button onclick="location.hash='beats'" style="margin-top:12px;padding:8px 16px;background:#FF1E3C;color:white;border:none;border-radius:8px">Go Beats</button>
+    </div>`;
     return;
   }
 
@@ -106,7 +126,7 @@ export async function initBeatPage(){
         <div class="beat-bg-gradient"></div>
         <div class="beat-content">
           <div class="beat-back-row">
-            <button class="beat-back-btn" onclick="navigate('/beats')">← Back</button>
+            <button class="beat-back-btn" onclick="location.hash='beats'">← Back</button>
           </div>
 
           <div class="beat-hero">
@@ -158,7 +178,7 @@ export async function initBeatPage(){
           <div class="beat-similar-section">
             <div class="beat-section-head">
               <div class="beat-section-title">More like ${escapeHTML(beat.title)}</div>
-              <button class="beat-back-btn" style="height:30px;font-size:12px" onclick="navigate('/beats')">Show all</button>
+              <button class="beat-back-btn" style="height:30px;font-size:12px" onclick="location.hash='beats'">Show all</button>
             </div>
             <div class="beat-sim-list" id="similarList"></div>
           </div>
@@ -225,7 +245,7 @@ export async function initBeatPage(){
     };
 
     const buyBtn=document.getElementById("buyBtn");
-    if(buyBtn) buyBtn.onclick=()=>navigate(`/licence?id=${beat.id}`);
+    if(buyBtn) buyBtn.onclick=()=>{ location.hash=`licence?id=${beat.id}`; };
 
     const dlBtn=document.getElementById("downloadBtn");
     if(dlBtn){
@@ -280,7 +300,6 @@ export async function initBeatPage(){
             </div>
           </div>
         `;
-        // ROW CLICK = PLAY ONLY
         row.onclick=(e)=>{
           if(e.target.closest("[data-play],[data-dots],.dt-row-menu")) return;
           const currId = String(window.__CURRENT_BEAT__?.id);
@@ -305,11 +324,8 @@ export async function initBeatPage(){
           if(!act) return;
           menu.classList.remove("active");
          if(act==="goto"){
-            // instant switch current preview to new beat
-            const newId = b.id;
-            history.replaceState(null,"",`#/beat?id=${encodeURIComponent(newId)}`);
+            location.hash=`beat?id=${encodeURIComponent(b.id)}`;
             window.scrollTo({top:0, behavior:"smooth"});
-            initBeatPage();
             return;
           }
           if(act==="cart"){
@@ -317,10 +333,10 @@ export async function initBeatPage(){
             if(!cart.some(c=>String(c.id)===String(b.id))){ cart.push(b); localStorage.setItem("dopetone_cart", JSON.stringify(cart)); window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:cart.length}})); }
             window.Auth?.showToast?.("Added to cart");
           }
-          if(act==="buy") navigate(`/licence?id=${b.id}`);
+          if(act==="buy") location.hash=`licence?id=${b.id}`;
           if(act==="share"){
             const url=`${location.origin}/#/beat?id=${encodeURIComponent(b.id)}`;
-            navigator.clipboard?.writeText(url).then(()=>window.Auth?.showToast?.("Link copied - direct beat link"));
+            navigator.clipboard?.writeText(url).then(()=>window.Auth?.showToast?.("Link copied"));
           }
         };
         list.appendChild(row);

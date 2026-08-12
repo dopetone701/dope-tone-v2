@@ -1,5 +1,5 @@
 // ===============================
-// FEATURED - FIXED FOR DTPlayer - FULL FILE
+// FEATURED - FIXED FOR DTPlayer - FULL FILE V2.9 HASH ONLY
 // ===============================
 const PLAY_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>`;
 const PAUSE_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
@@ -11,14 +11,26 @@ const getMode = b => {
   if(b.is_free==1) return 'free';
   return 'paid';
 };
-const fixPrice = p => { let n=Number(p??29.99); if(n>=100) n/=100; return Number(n.toFixed(2)); };
-const getPriceHTML = b => getMode(b)==='free' ? `<span class="free-dna">FREE</span>` : `<span class="old">$49</span><span class="new">$${fixPrice(b.price).toFixed(2)}</span>`;
+const fixPrice = p => { let n=Number(p??29.99); if(n>=1000) n/=100; return Number(n.toFixed(2)); };
+const getPriceHTML = b => getMode(b)==='free'? `<span class="free-dna">FREE</span>` : `<span class="old">$49</span><span class="new">$${fixPrice(b.price).toFixed(2)}</span>`;
 const getBuyLabel = b => getMode(b)==='free'? 'Free Download' : 'Buy';
 function getFeaturedBeats(a){
   if(!a?.length) return [];
   let marked=a.filter(b=>b.is_featured==1); if(marked.length>=5) return marked.slice(0,10);
   return [...a].sort(()=>0.5-Math.random()).slice(0,10);
 }
+
+// INJECTED - GO TO BEAT HASH ONLY
+function goToBeat(beat){
+  if(!beat?.id) return;
+  location.hash = `beat?id=${encodeURIComponent(beat.id)}`;
+}
+function buyBeatGo(beat){
+  let cart=JSON.parse(localStorage.getItem("dopetone_cart")||"[]");
+  if(!cart.find(x=>String(x.id)===String(beat.id))){ cart.push({...beat, price: fixPrice(beat.price)}); localStorage.setItem("dopetone_cart",JSON.stringify(cart)); window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:cart.length}})); }
+  location.hash = `licence?id=${encodeURIComponent(beat.id)}`;
+}
+window.goToBeat = goToBeat;
 
 if (!window.__FEATURED_EVENTS__) {
   window.__FEATURED_EVENTS__ = true;
@@ -82,53 +94,52 @@ export function renderFeatured(){
     const buyBtn=card.querySelector(".f-buy");
 
     playBtn.addEventListener('click', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
       const audio = window.__DT_AUDIO__ || window.__DOPE_TONE_AUDIO__;
       const player = window.DTPlayer || window.globalPlayer;
-
-      if (!audio ||!player){
-        console.error('[FEATURED] No player found - make sure player-engine.js is loaded BEFORE featured.js');
-        return;
-      }
-
+      if (!audio ||!player){ console.error('[FEATURED] No player found'); return; }
       const currentId = String(window.__CURRENT_BEAT__?.id || '');
-      // toggle same track by ID - stays active
       if (String(beat.id) === currentId) {
         if (audio.paused) audio.play().catch(()=>{});
         else audio.pause();
         return;
       }
-
-      // play new - USE DTPlayer
-      if(window.DTPlayer?.setQueue){
-        DTPlayer.setQueue(beats, i, true);
-      } else if(window.DTPlayTrack){
-        window.DTPlayTrack(beat, true);
-      }
+      if(window.DTPlayer?.setQueue){ DTPlayer.setQueue(beats, i, true); }
+      else if(window.DTPlayTrack){ window.DTPlayTrack(beat, true); }
       window.__CURRENT_LIST__ = "featured";
       window.__CURRENT_INDEX__ = i;
       window.__CURRENT_BEATS__ = beats;
-
       animateTo(i);
     });
 
     buyBtn.onclick = async e=>{
       e.stopPropagation();
       if(getMode(beat)==='free'){ await proDownload(beat, buyBtn); return; }
-      let cart=JSON.parse(localStorage.getItem("dopetone_cart")||"[]");
-      if(!cart.find(x=>String(x.id)===String(beat.id))){ cart.push(beat); localStorage.setItem("dopetone_cart",JSON.stringify(cart)); }
-      location.href=`licence-page.html?id=${beat.id}`;
+      buyBeatGo(beat);
     };
-    card.addEventListener('click', e=>{ if(e.target.closest(".f-play,.f-buy")) return; animateTo(i); });
+
+    // FIXED - CLICK CARD = GO TO BEAT, PLAY BTN ONLY PLAYS
+    card.addEventListener('click', e=>{
+      if(e.target.closest(".f-play,.f-buy")) return;
+      // Single click = animate, Double click = go to beat
+      animateTo(i);
+    });
+    card.addEventListener('dblclick', e=>{
+      if(e.target.closest(".f-play,.f-buy")) return;
+      e.preventDefault(); goToBeat(beat);
+    });
+    // Title click = go to beat
+    const titleEl = card.querySelector(".f-title");
+    if(titleEl){
+      titleEl.style.cursor="pointer";
+      titleEl.onclick = e=>{ e.stopPropagation(); goToBeat(beat); };
+    }
+
     frag.appendChild(card); cards.push(card);
   });
   root.appendChild(frag);
 
   function getOffset(i){ let d=i-current; if(d>beats.length/2)d-=beats.length; if(d<-beats.length/2)d+=beats.length; return d; }
-
   function update(){
     cards.forEach((c,i)=>{
       const o=getOffset(i);
@@ -137,28 +148,19 @@ export function renderFeatured(){
       c.style.zIndex=10-Math.abs(Math.round(o));
     });
   }
-
-  function getCurrentId(){
-    return String(window.__CURRENT_BEAT__?.id || '');
-  }
-
+  function getCurrentId(){ return String(window.__CURRENT_BEAT__?.id || ''); }
   function syncUI(){
     const audio = window.__DT_AUDIO__ || window.__DOPE_TONE_AUDIO__;
     const playing = audio &&!audio.paused;
     const currentId = getCurrentId();
-
     cards.forEach((c,i)=>{
       const beat = beats[i];
       const ic=c.querySelector(".f-icon");
-      // ACTIVE BY ID - so it stays when played from queue
       const isActive = String(beat.id) === currentId;
       const showPause = isActive && playing;
-
       ic.innerHTML = showPause? PAUSE_SVG : PLAY_SVG;
       c.classList.toggle("is-active", isActive);
       c.classList.toggle("is-playing", showPause);
-
-      // EQ animation
       let eq = c.querySelector('.f-eq');
       if(!eq){
         eq = document.createElement('div');
@@ -170,7 +172,6 @@ export function renderFeatured(){
       eq.style.display = showPause? 'flex' : 'none';
     });
   }
-
   function animateTo(t){
     const s=current, len=beats.length; let d=t-s; if(d>len/2)d-=len; if(d<-len/2)d+=len;
     const dur=380, st=performance.now();
@@ -181,15 +182,11 @@ export function renderFeatured(){
     }; requestAnimationFrame(tick);
   }
 
-  // FIXED HANDLERS - LISTEN TO ALL LISTS BY ID
   window.__featuredPlayHandler = e => {
     const newId = String(window.__CURRENT_BEAT__?.id || '');
     if(!newId) return;
     const idxInFeatured = beats.findIndex(b=> String(b.id)===newId);
-    if(idxInFeatured!== -1){
-      current = idxInFeatured;
-      update();
-    }
+    if(idxInFeatured!== -1){ current = idxInFeatured; update(); }
     syncUI();
   };
   window.__featuredPauseHandler = () => syncUI();
@@ -198,15 +195,12 @@ export function renderFeatured(){
   if(audio &&!audio.__featuredBound){
     audio.__featuredBound=true;
     audio.addEventListener('play', () => {
-      document.dispatchEvent(new CustomEvent("playerPlay", {
-        detail: { index: window.__CURRENT_INDEX__, listId: window.__CURRENT_LIST__ }
-      }));
+      document.dispatchEvent(new CustomEvent("playerPlay", { detail: { index: window.__CURRENT_INDEX__, listId: window.__CURRENT_LIST__ } }));
     });
     audio.addEventListener('pause', () => document.dispatchEvent(new CustomEvent("playerPause")));
     audio.addEventListener('ended', () => document.dispatchEvent(new CustomEvent("playerPause")));
   }
 
-  // SYNC QUEUE TO FEATURED SECTION - SAFE
   if(window.syncQueueToSection){
     window.syncQueueToSection(beats, "featured", Math.floor(beats.length/2));
   } else {

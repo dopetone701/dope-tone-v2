@@ -1,10 +1,10 @@
+// src/features/beats/gridView.js - V6.2 - TRUE DNA + CART COUNT FIX
 export function renderGridView(beats, deps = {}){
   const grid = document.getElementById("gridContainer");
   const list = document.getElementById("waveList");
   const sentinel = document.getElementById("beatsListSentinel");
   if(!grid) return;
 
-  // FORCE HIDE ROWS
   if(list){ list.style.display="none"; list.hidden=true; }
   if(sentinel) sentinel.style.display="none";
 
@@ -21,13 +21,23 @@ export function renderGridView(beats, deps = {}){
 
   function goToBeat(beat){
     if(!beat?.id) return;
-    const id = encodeURIComponent(beat.id);
-    if(window.navigate) window.navigate(`/beat?id=${id}`);
-    else location.hash = `#/beat?id=${id}`;
+    location.hash = `beat?id=${encodeURIComponent(beat.id)}`;
   }
 
+  // ===== DNA CART - FIXED =====
   function getCart(){ try{return JSON.parse(localStorage.getItem("dopetone_cart")||"[]")}catch{return []} }
-  function saveCart(c){ localStorage.setItem("dopetone_cart", JSON.stringify(c)); }
+  function saveCart(c){
+    localStorage.setItem("dopetone_cart", JSON.stringify(c));
+    const count = c.length;
+    document.querySelectorAll(".cart-count,#cartItems").forEach(el => el.textContent = String(count));
+    window.dispatchEvent(new CustomEvent("cc_cart_updated", {detail:{count}}));
+  }
+  function fixPrice(v){
+    let p = Number(v);
+    if(!Number.isFinite(p)) return 29.99;
+    if(p >= 1000) p/=100;
+    return Number(p.toFixed(2));
+  }
 
   const frag = document.createDocumentFragment();
   beats.forEach((beat,i)=>{
@@ -69,7 +79,6 @@ export function renderGridView(beats, deps = {}){
         <button class="f-buy ${mode==='free'?'is-free':''}">${mode==='free'?'Free Download':'Buy'}</button>
       </div>`;
 
-    // CARD CLICK = GO TO BEAT
     card.onclick = (e)=>{
       if(e.target.closest(".f-play,.f-buy,.dt-dots-wrap,.dt-row-menu")) return;
       goToBeat(beat);
@@ -96,7 +105,6 @@ export function renderGridView(beats, deps = {}){
       mode==='free'?downloadBeat(beat,e.currentTarget):buyBeat(beat);
     };
 
-    // 3 DOTS EXACT LIKE LIST VIEW
     const dotsWrap = card.querySelector(".dt-dots-wrap");
     const dotsBtn = dotsWrap.querySelector(".wave-dots");
     const menu = dotsWrap.querySelector(".dt-row-menu");
@@ -117,8 +125,17 @@ export function renderGridView(beats, deps = {}){
       if(act==="cart"){
         let cart=getCart();
         if(!cart.some(c=>String(c.id)===String(beat.id))){
-          cart.push(beat); saveCart(cart);
-          window.Auth?.showToast?.("Added to cart");
+          cart.push({...beat, price: fixPrice(beat.price)});
+          saveCart(cart);
+          window.Auth?.showToast?.(`Added ${beat.title} to cart`);
+          fetch("https://dopetone-stats.dopetone701.workers.dev/api/stats/event",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({beat_id: Number(beat.id), event_type: "cart"}),
+            keepalive:true
+          }).catch(()=>{});
+        } else {
+          window.Auth?.showToast?.("Already in cart");
         }
       }
       if(act==="buy") buyBeat(beat);
@@ -132,12 +149,10 @@ export function renderGridView(beats, deps = {}){
   });
   grid.appendChild(frag);
 
-  // close menus on outside click
   document.addEventListener("click", e=>{
     if(!e.target.closest(".dt-dots-wrap")) document.querySelectorAll(".dt-row-menu.active").forEach(m=>m.classList.remove("active"));
   });
 
-  // SYNC GRID PLAY BUTTONS
   if(!grid.dataset.syncBound){
     grid.dataset.syncBound="1";
     document.addEventListener("playerPlay", e=>{
