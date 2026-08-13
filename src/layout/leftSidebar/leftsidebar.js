@@ -78,36 +78,47 @@ export function initLeft(){
   var bar = el.querySelector('#nav-selector-bar');
   var navs = el.querySelectorAll('.nav');
 
-  function moveTo(activeEl){
+   function moveTo(activeEl){
     if(!activeEl ||!selector ||!bar) return;
-    var top = activeEl.offsetTop;
-    var h = activeEl.offsetHeight;
-    var barH = 24;
-    selector.style.height = h + 'px';
-    selector.style.transform = 'translateY('+ top +'px)';
-    bar.style.transform = 'translateY('+ (top + (h - barH) / 2) +'px)';
-    for(var k=0;k<navs.length;k++){
-      navs[k].style.color='#9CA3AF';
-      navs[k].style.fontWeight='500';
-      var svg = navs[k].querySelector('svg');
-      if(svg) svg.setAttribute('stroke', '#9CA3AF');
-    }
-    activeEl.style.color='#FFFFFF';
-    activeEl.style.fontWeight='700';
-    var activeSvg = activeEl.querySelector('svg');
-    if(activeSvg) activeSvg.setAttribute('stroke', 'white');
+    // Wait for layout to settle after collapse
+    requestAnimationFrame(()=>{
+      var top = activeEl.offsetTop;
+      var h = activeEl.offsetHeight;
+      var barH = 24;
+      selector.style.height = h + 'px';
+      selector.style.transform = 'translateY('+ top +'px)';
+      bar.style.transform = 'translateY('+ (top + (h - barH) / 2) +'px)';
+      for(var k=0;k<navs.length;k++){
+        navs[k].style.color='#9CA3AF';
+        navs[k].style.fontWeight='500';
+        var svg = navs[k].querySelector('svg');
+        if(svg) svg.setAttribute('stroke', '#9CA3AF');
+      }
+      activeEl.style.color='#FFFFFF';
+      activeEl.style.fontWeight='700';
+      var activeSvg = activeEl.querySelector('svg');
+      if(activeSvg) activeSvg.setAttribute('stroke', 'white');
+    });
   }
 
-  function setActiveFromHash(){
+   function setActiveFromHash(){
     var hash = (window.location.hash||'').replace(/^#\/?/,'').split('?')[0]||'home';
     var path = '/'+hash.replace(/^\/+/,'').toLowerCase();
+    var found = null;
     navs.forEach(n=>{
       var route = (n.getAttribute('data-route')||'').toLowerCase();
       if(route === path || (path==='/' && route==='/home')){
-        n.classList.add('active'); moveTo(n);
+        n.classList.add('active');
+        found = n;
       } else n.classList.remove('active');
     });
+    if(found){
+      moveTo(found);
+      // Re-move after collapse animation (310ms) - THIS FIXES YOUR BUG
+      setTimeout(()=> moveTo(found), 10);
+    }
   }
+
 
   var active = el.querySelector('.nav.active');
   if(active) moveTo(active);
@@ -167,10 +178,30 @@ export function initLeft(){
     };
   }
 
-  // KOVA STYLE - hashchange not popstate
+   // KOVA STYLE - hashchange not popstate
   window.addEventListener('hashchange', () => {
     setActiveFromHash();
   });
+
+   // FIX: Instant move to CC when collapsed
+  document.addEventListener('leftCollapsed', ()=>{
+    var a = el.querySelector('.nav.active');
+    if(a){
+      // Disable animation for instant snap
+      selector.style.transition = 'none';
+      bar.style.transition = 'none';
+      moveTo(a);
+      // Re-enable after
+      setTimeout(()=>{
+        selector.style.transition = 'transform.35s cubic-bezier(.16,1,.3,1), height.2s ease';
+        bar.style.transition = 'transform.35s cubic-bezier(.16,1,.3,1)';
+      }, 50);
+    }
+  });
+
+
+   // ADMIN CHECK
+
 
 
 
