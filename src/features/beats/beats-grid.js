@@ -1,4 +1,4 @@
-// src/features/beats/gridView.js - V6.2 - TRUE DNA + CART COUNT FIX
+// src/features/beats/gridView.js - V6.2 - TRUE DNA + CART COUNT FIX - D1 ONLY
 export function renderGridView(beats, deps = {}){
   const grid = document.getElementById("gridContainer");
   const list = document.getElementById("waveList");
@@ -21,7 +21,7 @@ export function renderGridView(beats, deps = {}){
 
   function goToBeat(beat){
     if(!beat?.id) return;
-    location.hash = `beat?id=${encodeURIComponent(beat.id)}`;
+    location.hash = `#/beat?id=${encodeURIComponent(beat.id)}`;
   }
 
   // ===== DNA CART - FIXED =====
@@ -131,7 +131,7 @@ export function renderGridView(beats, deps = {}){
           fetch("https://dopetone-stats.dopetone701.workers.dev/api/stats/event",{
             method:"POST",
             headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({beat_id: Number(beat.id), event_type: "cart"}),
+            body: JSON.stringify({beatId: Number(beat.id), eventType: "cart"}),
             keepalive:true
           }).catch(()=>{});
         } else {

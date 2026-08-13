@@ -8,6 +8,9 @@ import { initLiquidEq } from './mini-eq.js';
 const LS_QUEUE = 'dt_queue_v3';
 const LS_INDEX = 'dt_index_v3';
 const LS_LIKES = 'dopetone_likes';
+const STATS_API = 'https://dopetone-stats.dopetone701.workers.dev';
+let playedBeats = new Set();
+function logBeatEvent(id, type){ if(!id) return; fetch(`${STATS_API}/api/stats/event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({beatId:parseInt(id),eventType:type})}).catch(()=>{}) }
 
 const AUDIO_CACHE = 'dt-audio-v1';
 
@@ -30,38 +33,15 @@ const fmt = s => {
   return `${m}:${String(sc).padStart(2,'0')}`;
 };
 
-const getLikes = () => {
-  try {
-    return JSON.parse(localStorage.getItem(LS_LIKES) || '{}');
-  } catch {
-    return {};
-  }
-};
-
-const saveLikes = m => {
-  try {
-    localStorage.setItem(LS_LIKES, JSON.stringify(m));
-  } catch {}
-};
-
-const isLiked = id => {
-  const m = getLikes();
-  return !!m[String(id)] || !!m[Number(id)];
-};
-
+const getLikes = () => { try{ return JSON.parse(localStorage.getItem(LS_LIKES)||'{}') }catch{ return {} } };
+const saveLikes = m => { try{ localStorage.setItem(LS_LIKES, JSON.stringify(m)); localStorage.setItem('dopetone_likes_count', String(Object.keys(m).length)); }catch{} };
+const isLiked = id => { if(id==null) return false; const m=getLikes(); const s=String(id).trim(); return!!(m[s]||m[Number(s)]); };
 const toggleLike = id => {
-  const m = getLikes();
-  const key = String(id);
-  const now = !m[key];
-
-  if(now) m[key] = Date.now();
-  else {
-    delete m[key];
-    delete m[Number(key)];
-  }
-
-  saveLikes(m);
-  return now;
+  const m=getLikes(); const k=String(id).trim(); const n=Number(k);
+  const now=!(m[k]||m[n]);
+  if(now){ m[k]=Date.now(); m[n]=Date.now(); }
+  else{ Object.keys(m).forEach(x=>{ if(String(x).trim()===k||Number(x)===n) delete m[x] }); }
+  saveLikes(m); return now;
 };
 
 const getSrc = t =>
@@ -162,57 +142,22 @@ async function cacheTrack(track){
 
 
 async function getPlayableSource(track){
-
   const src = getSrc(track);
-
   if(!src) return '';
-
-  // First try network/cache normally.
+  // online -> use src directly, cache in background
   try{
-
-    const response = await fetch(src, {
-      mode:'cors',
-      credentials:'omit',
-      cache:'default'
-    });
-
-    if(response.ok){
-
-      // Cache a clone in the background.
-      const clone = response.clone();
-
-      getCache().then(cache=>{
-        if(cache){
-          cache.put(src, clone).catch(()=>{});
-        }
-      }).catch(()=>{});
-
-      return URL.createObjectURL(await response.blob());
-    }
-
+    const r = await fetch(src, { method:'HEAD', mode:'cors', cache:'no-store' });
+    if(r.ok){ cacheTrack(track); return src; }
   }catch{}
-
-  // Network failed — use cached copy.
+  // offline -> blob from cache
   try{
-
     const cache = await getCache();
-
-    if(cache){
-
-      const cached = await cache.match(src);
-
-      if(cached){
-
-        return URL.createObjectURL(await cached.blob());
-
-      }
-
-    }
-
+    const cached = await cache?.match(src);
+    if(cached) return URL.createObjectURL(await cached.blob());
   }catch{}
-
   return src;
 }
+
 
 
 // ============================================================
@@ -286,6 +231,14 @@ function bootPlayerListeners(){
 
   listenersAttached = true;
 
+   document.addEventListener('keydown', (e)=>{
+    if(e.code!=='Space' && e.key!==' ') return;
+    const t=document.activeElement?.tagName?.toLowerCase();
+    if(t==='input'||t==='textarea'||document.activeElement?.isContentEditable) return;
+    e.preventDefault(); DTPlayer.toggle();
+  });
+
+
 
   // ----------------------------------------------------------
   // VISIBILITY
@@ -348,6 +301,13 @@ function bootPlayerListeners(){
     document.body.classList.add('playing');
 
     syncPlayIcons(true);
+
+       const beatId = window.__CURRENT_BEAT__?.id;
+    if(beatId &&!playedBeats.has(String(beatId))){
+      logBeatEvent(beatId, 'play');
+      playedBeats.add(String(beatId));
+    }
+
 
     document.dispatchEvent(
       new CustomEvent('playerPlay',{
@@ -525,27 +485,22 @@ function syncPlayIcons(playing){
 }
 
 
-function syncHearts(liked){
-
-  document
-    .getElementById('loveTrackBtn')
-    ?.classList
-    .toggle('active',liked);
-
-  document
-    .querySelectorAll('.love-heart')
-    .forEach(h=>{
-      h.textContent = liked ? '♥' : '♡';
-    });
-
-  const text =
-    document.querySelector('.love-text');
-
-  if(text){
-    text.textContent = liked ? 'LOVED' : 'LOVE IT';
-  }
-
+function syncHearts(liked, beatId = window.__CURRENT_BEAT__?.id){
+  if(beatId==null) return liked;
+  document.getElementById('loveTrackBtn')?.classList.toggle('active',liked);
+  document.getElementById('loveTrackBtn')?.classList.toggle('liked',liked);
+  document.querySelectorAll('.love-heart').forEach(h=>{ h.textContent = liked ? '♥' : '♡'; });
+  const text = document.querySelector('#loveTrackBtn .love-text') || document.querySelector('.love-text');
+  if(text) text.textContent = liked ? 'LOVED' : 'LOVE IT';
+  const map=getLikes();
+  const total=Object.keys(map).length;
+  window.dispatchEvent(new CustomEvent('cc_like_updated',{detail:{beat_id:beatId, beatId, liked, count:total, perBeat:map}}));
+  window.dispatchEvent(new CustomEvent('cc_player_like_sync',{detail:{total, beat_id:beatId, beatId, liked}}));
+  window.dispatchEvent(new CustomEvent('cc_like_change',{detail:{beat_id:beatId, liked}}));
+  const totalEl=document.getElementById('totalLikes'); if(totalEl) totalEl.textContent=String(total);
+  return liked;
 }
+
 
 
 // ============================================================
@@ -927,40 +882,50 @@ export function initPlayerBar(){
 
   el.addEventListener('click',e=>{
 
-    const btn =
-      e.target.closest('[data-action]');
-
+    const btn = e.target.closest('[data-action]');
     if(!btn) return;
 
-    const act =
-      btn.dataset.action;
-
+    const act = btn.dataset.action;
     if(act === 'seek') return;
 
-    if(act === 'toggle')
-      DTPlayer.toggle();
-
-    if(act === 'next')
-      DTPlayer.next();
-
-    if(act === 'prev')
-      DTPlayer.prev();
+    if(act === 'toggle') DTPlayer.toggle();
+    if(act === 'next') DTPlayer.next();
+    if(act === 'prev') DTPlayer.prev();
 
     if(act === 'like'){
-
-      const cur =
-        window.__CURRENT_BEAT__;
-
+      const cur = window.__CURRENT_BEAT__;
       if(!cur) return;
+      const liked = toggleLike(cur.id);
+      syncHearts(liked, cur.id);
 
-      const liked =
-        toggleLike(cur.id);
+      // D1 BLACK HOLE
+      fetch(`https://dopetone-stats.dopetone701.workers.dev/api/stats/event`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({beatId: parseInt(cur.id), eventType: 'like'})
+      }).catch(()=>{});
 
-      syncHearts(liked);
-
+      // vault sync so Liked page updates
+      let likedIds = JSON.parse(localStorage.getItem('dt_liked_v1')||'[]');
+      let vault = JSON.parse(localStorage.getItem('dt_vault_v1')||'[]');
+      let likedPl = vault.find(p=>p.isLiked);
+      if(!likedPl){ likedPl = {id:'dt_liked_playlist', name:'Liked', isLiked:true, beats:[]}; vault.unshift(likedPl); }
+      if(liked){
+        if(!likedIds.includes(String(cur.id)) && !likedIds.includes(Number(cur.id))) likedIds.push(cur.id);
+        if(!likedPl.beats.some(b=>String(b.id)===String(cur.id))) likedPl.beats.unshift(cur);
+      } else {
+        likedIds = likedIds.filter(id=>String(id)!==String(cur.id));
+        likedPl.beats = likedPl.beats.filter(b=>String(b.id)!==String(cur.id));
+      }
+      localStorage.setItem('dt_liked_v1', JSON.stringify(likedIds));
+      localStorage.setItem('dt_liked_ids', JSON.stringify(likedIds));
+      localStorage.setItem('dt_vault_v1', JSON.stringify(vault));
+      window.dispatchEvent(new Event('dt_vault_updated'));
+      window.dispatchEvent(new Event('playlistsUpdated'));
     }
 
   });
+
 
 
   // ==========================================================

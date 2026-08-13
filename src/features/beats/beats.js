@@ -1,6 +1,6 @@
 // ============================================================
 // DOPE TONE VAULT V2.5 — FULL LENGTH — PRO VIEW SYSTEM
-// FIXED CART ONLY - REST UNTOUCHED
+// FIXED CART ONLY - REST UNTOUCHED - V2.9 PRO
 // ============================================================
 
 import {
@@ -95,6 +95,7 @@ let listObserver = null;
 const waveCache = new Map();
 let initialized = false;
 let genreDropdown = null;
+let playedBeats = new Set();
 
 function getGlobalBeats() {
   const b =
@@ -109,7 +110,7 @@ function getGlobalBeats() {
 function normalizeBeat(raw) {
   if (!raw) return null;
   return {
-   ...raw,
+  ...raw,
     id: raw.id,
     title: raw.title || raw.name || "Untitled",
     cover_url: raw.cover_url || raw.cover || raw.image || "images/studio.jpg",
@@ -139,13 +140,21 @@ function getMode(beat) {
   return "paid";
 }
 
+// FIXED LIKES - OBJECT DUAL KEY
 function getLikes() {
-  try { return JSON.parse(localStorage.getItem("dopetone_likes") || "[]"); } catch { return []; }
+  try { const v=localStorage.getItem("dopetone_likes"); if(!v) return {}; const j=JSON.parse(v); return Array.isArray(j)? {} : j; } catch { return {}; }
 }
-function saveLikes(likes) {
-  localStorage.setItem("dopetone_likes", JSON.stringify(likes));
+function saveLikes(m) {
+  try{ localStorage.setItem("dopetone_likes", JSON.stringify(m)); localStorage.setItem('dopetone_likes_count', String(Object.keys(m).length)); }catch{}
 }
-function isLiked(id) { return getLikes().includes(String(id)); }
+function isLiked(id) { if(id==null) return false; const m=getLikes(); const s=String(id).trim(); return!!(m[s]||m[Number(s)]); }
+function toggleLike(id){
+  const m=getLikes(); const k=String(id).trim(); const n=Number(k);
+  const now=!(m[k]||m[n]);
+  if(now){ m[k]=Date.now(); m[n]=Date.now(); }
+  else{ Object.keys(m).forEach(x=>{ if(String(x).trim()===k||Number(x)===n) delete m[x] }); }
+  saveLikes(m); return now;
+}
 
 function getCurrentUser() {
   try {
@@ -167,13 +176,20 @@ function requireAuth() {
   return null;
 }
 
+// FIXED TRACK EVENT - D1 BLACK HOLE COMPATIBLE
 function trackEvent(id, type) {
+  if(!id) return;
+  // new API
   fetch(`${STATS_API}/api/stats/event`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ beat_id: Number(id), event_type: type }),
+    body: JSON.stringify({ beatId: parseInt(id), eventType: type }),
     keepalive: true
   }).catch(() => {});
+  // legacy fallback for all-beats-analytics
+  if(type==='like' || type==='play' || type==='cart' || type==='download'){
+    fetch(`${STATS_API}/api/stats/track/${id}/${type}`, {method:"POST", keepalive:true}).catch(()=>{});
+  }
 }
 
 // ============================================================
@@ -191,10 +207,12 @@ function updateCartUI() {
   document.querySelectorAll(".cart-count,#cartItems").forEach(el => el.textContent = String(count));
   window.dispatchEvent(new CustomEvent("cc_cart_updated", { detail: { count } }));
 }
+// REPLACE THESE 3 FUNCTIONS IN YOUR FILE:
+
 function addToCartOnly(beat) {
   let cart = getCart();
   if (!cart.some(item => String(item.id) === String(beat.id))) {
-    cart.push({...beat, price: fixPrice(beat.price) });
+    cart.push({...beat, price: fixPrice(beat.price), selected_licence:'basic', licence:'basic' });
     saveCart(cart);
     trackEvent(beat.id, "cart");
     window.Auth?.showToast?.(`Added ${beat.title} to cart`);
@@ -202,17 +220,20 @@ function addToCartOnly(beat) {
     window.Auth?.showToast?.("Already in cart");
   }
 }
-function buyBeat(beat) {
-  addToCartOnly(beat);
-  window.location.href = `licence-page.html?id=${encodeURIComponent(beat.id)}`;
+
+async function buyBeat(beat) {
+  const mod = await import("../../features/licence/licence.js");
+  mod.openLicencePopup(beat, beat.selected_licence||'basic');
 }
+
 function goToBeat(beat) {
   if (!beat?.id) return;
   closeAllMenus();
   const id = encodeURIComponent(beat.id);
-  if (window.navigate) window.navigate(`/beat?id=${id}`);
-  else location.hash = `#/beat?id=${id}`;
+  location.hash = `#/beat?id=${id}`;
+  window.scrollTo({top:0, behavior:'smooth'});
 }
+
 
 const activeDownloads = new Set();
 async function downloadBeat(beat, button) {
@@ -250,6 +271,7 @@ async function downloadBeat(beat, button) {
 
 function playBeat(beat, index, list) {
   if (!window.globalPlayer?.play) return;
+  if(!playedBeats.has(String(beat.id))){ trackEvent(beat.id, "play"); playedBeats.add(String(beat.id)); }
   window.__CURRENT_BEAT__ = beat;
   window.__CURRENT_LIST__ = "beats-v2";
   window.globalPlayer.play(index, list, "beats-v2");
@@ -261,16 +283,45 @@ function destroyWaves() {
   waveCache.clear();
 }
 
+let renderQueue = new Set();
+let scrollIdleTimer = null;
+let isScrolling = false;
+
+// detect scroll idle
+window.addEventListener('scroll', ()=>{ isScrolling=true; clearTimeout(scrollIdleTimer); scrollIdleTimer=setTimeout(()=>{ isScrolling=false; flushWaveQueue(); }, 120); }, {passive:true});
+
+function flushWaveQueue(){
+  if(renderQueue.size===0) return;
+  const rows = [...renderQueue];
+  renderQueue.clear();
+  rows.forEach(({row, beat})=>{
+    if(document.contains(row) && row.dataset.waveReady!=="1"){
+      requestAnimationFrame(()=> ensureWave(row, beat));
+    }
+  });
+}
+
 function ensureWave(row, beat) {
-  if (!row || row.dataset.waveReady === "1" ||!beat?.mp3_url) return;
+  if (!row || !beat?.mp3_url) return;
+  if (row.dataset.waveReady === "1" || row.dataset.waveLoading === "1") return;
+  
   const container = row.querySelector(".wave-bar");
   if (!container) return;
+  
+  // if scrolling fast - queue it for stable render
+  if(isScrolling){
+    renderQueue.add({row, beat});
+    return;
+  }
+
   const WS = window.WaveSurfer || (typeof WaveSurfer!== "undefined"? WaveSurfer : null);
   if (!WS?.create) return;
-  row.dataset.waveReady = "1";
-  container.innerHTML = "";
+  
+  row.dataset.waveLoading = "1";
+  container.innerHTML = ""; // clear once only
+
   try {
-    const wave = WS.create({
+       const wave = WS.create({
       container,
       waveColor: "rgba(255,255,255,.18)",
       progressColor: "#FF1E3C",
@@ -281,22 +332,84 @@ function ensureWave(row, beat) {
       barGap: 3,
       barRadius: 2,
       normalize: true,
-      interact: false,
+      interact: true, // <-- SEEK ENABLED
       partialRender: true,
-      hideScrollbar: true
+      hideScrollbar: true,
+      autoCenter: false
     });
-    wave.load(beat.mp3_url);
+
+    
+    let loaded = false;
     wave.on("ready", () => {
+      loaded = true;
+      row.dataset.waveReady = "1";
+      row.dataset.waveLoading = "0";
       if (String(window.__CURRENT_BEAT__?.id) === String(beat.id)) {
         const audio = document.querySelector("audio") || window.__DT_AUDIO__;
         if (audio?.duration) { try { wave.seekTo(audio.currentTime / audio.duration); } catch {} }
       }
     });
-    wave.on("error", () => { row.dataset.waveReady = "0"; waveCache.delete(String(beat.id)); });
+    
+    wave.on("error", () => { 
+      row.dataset.waveReady = "0"; 
+      row.dataset.waveLoading = "0";
+      waveCache.delete(String(beat.id)); 
+      try{ wave.destroy(); }catch{}
+    });
+
+    // timeout guard - if not ready in 8s, allow retry
+    setTimeout(()=>{ if(!loaded){ row.dataset.waveLoading="0"; } }, 8000);
+    
+    wave.load(beat.mp3_url);
+       // CLICK TO SEEK ON WAVE
+    container.addEventListener('click', (e)=>{
+      if(String(beat.id)!==String(window.__CURRENT_BEAT__?.id)) return;
+      const audio = document.querySelector("audio") || window.__DT_AUDIO__;
+      if(!audio?.duration) return;
+      const rect = container.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      audio.currentTime = pct * audio.duration;
+      try{ wave.seekTo(pct); }catch{}
+    });
+
+    // WaveSurfer seek -> audio seek
+    wave.on('interaction', (newTime)=>{
+      const audio = document.querySelector("audio") || window.__DT_AUDIO__;
+      if(String(beat.id)!==String(window.__CURRENT_BEAT__?.id)) return;
+      if(audio && isFinite(newTime)) audio.currentTime = newTime;
+    });
+
     row.__wave = wave;
     waveCache.set(String(beat.id), wave);
-  } catch { row.dataset.waveReady = "0"; }
+  } catch { 
+    row.dataset.waveReady = "0"; 
+    row.dataset.waveLoading = "0"; 
+  }
 }
+
+function setupLazyWaves() {
+  if (waveObserver) waveObserver.disconnect();
+  waveObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const row = entry.target;
+      // only render when stable in viewport >100ms
+      setTimeout(()=>{
+        if(!document.contains(row)) return;
+        const beat = filteredBeats.find(b => String(b.id) === String(row.dataset.beatId));
+        if (beat && row.dataset.waveReady!=="1") ensureWave(row, beat);
+      }, 80);
+      waveObserver.unobserve(row);
+    });
+  }, { rootMargin: "800px 0px 800px 0px", threshold: 0.01 });
+  
+  // observe only not-yet-observed
+  document.querySelectorAll("#waveList .wave-row:not([data-wave-observed])").forEach(row => {
+    row.dataset.waveObserved = "1";
+    waveObserver.observe(row);
+  });
+}
+
 
 function closeAllMenus() {
   document.querySelectorAll(".dt-row-menu.active").forEach(menu => menu.classList.remove("active"));
@@ -332,12 +445,14 @@ function createDotsMenu(beat) {
     closeAllMenus();
     if (!was) { menu.classList.add("active"); wrap.closest(".wave-row").style.zIndex = "999"; }
   };
-  menu.onclick = e => {
+
+
+   menu.onclick = async e => {
     e.stopPropagation();
     const act = e.target.closest("button")?.dataset.act;
     if (!act) return;
     closeAllMenus();
-    if (act === "goto") { goToBeat(beat); return; }
+    if (act === "goto") { e.preventDefault(); goToBeat(beat); return; }
     if (act === "playlist") {
       const pls = JSON.parse(localStorage.getItem("dopetone_playlists") || "[]");
       let my = pls.find(p => p.name === "My Playlist");
@@ -347,28 +462,29 @@ function createDotsMenu(beat) {
       window.Auth?.showToast?.("Added to playlist");
     }
     if (act === "like") {
-      let likes = getLikes();
-      const id = String(beat.id);
-      const cl = likes.includes(id);
-      likes = cl? likes.filter(x => x!== id) : [...likes, id];
-      if (!cl) trackEvent(beat.id, "like");
-      saveLikes(likes);
+      const nowLiked = toggleLike(beat.id);
+      if (nowLiked) trackEvent(beat.id, "like");
+      const map=getLikes(); const total=Object.keys(map).length;
+      window.dispatchEvent(new CustomEvent('cc_like_updated',{detail:{beat_id:beat.id, beatId:beat.id, liked:nowLiked, count:total, perBeat:map}}));
+      window.dispatchEvent(new CustomEvent('cc_player_like_sync',{detail:{total, beat_id:beat.id, beatId:beat.id, liked:nowLiked}}));
       const row = document.querySelector(`.wave-row[data-beat-id="${beat.id}"]`);
       if (row) {
         const h = row.querySelector(".wave-heat");
-        if (h) { h.classList.toggle("is-liked",!cl); h.innerHTML =!cl? HEART_FILL : HEART_SVG; }
+        if (h) { h.classList.toggle("is-liked",nowLiked); h.innerHTML =nowLiked? HEART_FILL : HEART_SVG; }
       }
     }
     if (act === "share") {
-      const url = `${location.origin}/beat.html?id=${beat.id}`;
-      if (navigator.share) navigator.share({ title: beat.title, url }).catch(() => {});
-      else if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => window.Auth?.showToast?.("Link copied"));
+      const url = `${location.origin}/#/beat?id=${beat.id}`;
+      if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => window.Auth?.showToast?.("Link copied"));
       trackEvent(beat.id, "share");
     }
     if (act === "download") downloadBeat(beat);
-    if (act === "cart") addToCartOnly(beat);
-    if (act === "buy") buyBeat(beat);
+    if (act === "cart" || act === "buy"){
+      const mod = await import("../../features/licence/licence.js");
+      mod.openLicencePopup(beat, beat.selected_licence||'basic');
+    }
   };
+
   return wrap;
 }
 
@@ -419,20 +535,22 @@ function createListRow(beat, index, list) {
   };
   row.querySelector(".wave-heat").onclick = e => {
     e.stopPropagation();
-    let likes = getLikes();
-    const id = String(beat.id);
-    const cl = likes.includes(id);
-    likes = cl? likes.filter(x => x!== id) : [...likes, id];
-    if (!cl) trackEvent(beat.id, "like");
-    saveLikes(likes);
+    const nowLiked = toggleLike(beat.id);
+    if (nowLiked) trackEvent(beat.id, "like");
+    const map=getLikes(); const total=Object.keys(map).length;
+    window.dispatchEvent(new CustomEvent('cc_like_updated',{detail:{beat_id:beat.id, beatId:beat.id, liked:nowLiked, count:total, perBeat:map}}));
+    window.dispatchEvent(new CustomEvent('cc_player_like_sync',{detail:{total, beat_id:beat.id, beatId:beat.id, liked:nowLiked}}));
     const b = e.currentTarget;
-    b.classList.toggle("is-liked",!cl);
-    b.innerHTML =!cl? HEART_FILL : HEART_SVG;
+    b.classList.toggle("is-liked",nowLiked);
+    b.innerHTML =nowLiked? HEART_FILL : HEART_SVG;
   };
-  row.querySelector(".wave-buy").onclick = e => {
+   row.querySelector(".wave-buy").onclick = async e => {
     e.stopPropagation();
-    mode === "free"? downloadBeat(beat, e.currentTarget) : buyBeat(beat);
+    if(mode==="free"){ downloadBeat(beat, e.currentTarget); return; }
+    const mod = await import("../../features/licence/licence.js");
+    mod.openLicencePopup(beat, beat.selected_licence||'basic');
   };
+
   return row;
 }
 
@@ -481,22 +599,8 @@ function setViewVisibility(view) {
   }
 }
 
-function setupLazyWaves() {
-  if (waveObserver) waveObserver.disconnect();
-  waveObserver = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      const row = entry.target;
-      const beat = filteredBeats.find(b => String(b.id) === String(row.dataset.beatId));
-      if (beat) ensureWave(row, beat);
-      waveObserver.unobserve(row);
-    });
-  }, { rootMargin: "0px 0px 450px 0px" });
-  document.querySelectorAll("#waveList.wave-row:not([data-wave-observed])").forEach(row => {
-    row.dataset.waveObserved = "1";
-    waveObserver.observe(row);
-  });
-}
+
+
 
 function setupListObserver() {
   let sentinel = document.getElementById("beatsListSentinel");
@@ -530,10 +634,22 @@ function renderList(reset = true) {
   const frag = document.createDocumentFragment();
   next.forEach((beat, i) => { frag.appendChild(createListRow(beat, listRendered + i, filteredBeats)); });
   container.appendChild(frag);
+  
+  // BULLET-PROOF: render first 2 instantly (above fold), rest via stable observer
+  requestAnimationFrame(()=>{
+    const rows = [...container.querySelectorAll(".wave-row")];
+    const newRows = rows.slice(listRendered, listRendered + next.length);
+    newRows.slice(0,2).forEach(r=>{
+      const b = filteredBeats.find(x=>String(x.id)===String(r.dataset.beatId));
+      if(b && r.dataset.waveReady!=="1") ensureWave(r,b);
+    });
+  });
+
   listRendered += next.length;
   setupLazyWaves();
   if (listRendered < filteredBeats.length) setupListObserver();
 }
+
 
 function renderGrid(reset = true) {
   const container = getGridContainer();
@@ -844,6 +960,9 @@ function injectGenreStyles(){
 .wave-bar::after{content:"";position:absolute;left:0;top:50%;width:var(--progress, 0%);height:2px;background:transparent;pointer-events:none;}
 .wave-bar wave{width:100%!important;}
 .wave-bar:hover{filter:brightness(1.2)!important}
+
+
+
 `;
   document.head.appendChild(style);
 }
@@ -895,29 +1014,42 @@ async function waitForStore() {
 }
 
 (function () {
-  let ticking = false;
-  function getAudio() { return document.querySelector("audio") || window.__DT_AUDIO__; }
-  function sync() {
-    ticking = false;
-    const audio = getAudio();
-    if (!audio || audio.paused ||!audio.duration ||!window.__CURRENT_BEAT__?.id) return;
-    const progress = audio.currentTime / audio.duration;
-    document.querySelectorAll(".wave-row").forEach(row => {
-      if (String(row.dataset.beatId)!== String(window.__CURRENT_BEAT__.id)) return;
-      try { row.__wave?.seekTo(progress); } catch {}
-    });
+  let rafId = null;
+  function getAudio() { return document.querySelector("audio") || window.__DT_AUDIO__ || document.getElementById("globalAudio"); }
+  
+  function syncProgress(){
+    const audio=getAudio();
+    if(!audio||!audio.duration||!window.__CURRENT_BEAT__?.id){
+      rafId = requestAnimationFrame(syncProgress);
+      return;
+    }
+    const p = audio.currentTime / audio.duration;
+    if(!isFinite(p)){ rafId = requestAnimationFrame(syncProgress); return; }
+    
+    const row = document.querySelector(`.wave-row[data-beat-id="${window.__CURRENT_BEAT__.id}"]`);
+    if(row && row.__wave){
+      try{ row.__wave.seekTo(p); }catch{}
+      const bar=row.querySelector(".wave-bar");
+      if(bar) bar.style.setProperty("--progress", `${p*100}%`);
+    }
+    rafId = requestAnimationFrame(syncProgress);
   }
-  function requestSync() { if (ticking) return; ticking = true; requestAnimationFrame(sync); }
-  ["timeupdate","play","pause","seeked"].forEach(event => { document.addEventListener(event, requestSync, true); });
-  document.addEventListener("click", e => {
-    const bar = e.target.closest(".wave-bar"); if (!bar) return;
-    const audio = getAudio(); if (!audio?.duration) return;
-    const rect = bar.getBoundingClientRect();
-    const progress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    audio.currentTime = progress * audio.duration;
-    requestSync();
-  });
+  
+  function startLoop(){
+    if(rafId) return;
+    rafId = requestAnimationFrame(syncProgress);
+  }
+  function stopLoop(){
+    if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
+  }
+  
+  document.addEventListener("playerPlay", startLoop);
+  document.addEventListener("play", startLoop, true);
+  document.addEventListener("playerPause", stopLoop);
+  document.addEventListener("pause", stopLoop, true);
+  startLoop();
 })();
+
 
 window.DopeToneBeatsV2 = {
   render: loadBeats,

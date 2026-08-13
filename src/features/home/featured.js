@@ -1,5 +1,5 @@
 // ===============================
-// FEATURED - FIXED FOR DTPlayer - FULL FILE V2.9 HASH ONLY
+// FEATURED - FIXED FOR DTPlayer - BUY = LICENCE POPUP
 // ===============================
 const PLAY_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>`;
 const PAUSE_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
@@ -20,15 +20,20 @@ function getFeaturedBeats(a){
   return [...a].sort(()=>0.5-Math.random()).slice(0,10);
 }
 
-// INJECTED - GO TO BEAT HASH ONLY
+function trackEvent(id, type){
+  if(!id) return;
+  fetch(`${STATS_API}/api/stats/event`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({beatId: parseInt(id), eventType: type}),
+    keepalive:true
+  }).catch(()=>{});
+}
+
 function goToBeat(beat){
   if(!beat?.id) return;
-  location.hash = `beat?id=${encodeURIComponent(beat.id)}`;
-}
-function buyBeatGo(beat){
-  let cart=JSON.parse(localStorage.getItem("dopetone_cart")||"[]");
-  if(!cart.find(x=>String(x.id)===String(beat.id))){ cart.push({...beat, price: fixPrice(beat.price)}); localStorage.setItem("dopetone_cart",JSON.stringify(cart)); window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:cart.length}})); }
-  location.hash = `licence?id=${encodeURIComponent(beat.id)}`;
+  location.hash = `#/beat?id=${encodeURIComponent(beat.id)}`;
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 window.goToBeat = goToBeat;
 
@@ -39,9 +44,7 @@ if (!window.__FEATURED_EVENTS__) {
 }
 
 const activeDownloads = new Set();
-async function trackDownload(beat){
-  try{ fetch(`${STATS_API}/api/stats/track/${beat.id}/download`, {method:'POST', keepalive:true}).catch(()=>{}); }catch{}
-}
+async function trackDownload(beat){ trackEvent(beat.id, "download"); }
 async function proDownload(beat, btn){
   if(activeDownloads.has(String(beat.id))) return;
   activeDownloads.add(String(beat.id));
@@ -104,6 +107,7 @@ export function renderFeatured(){
         else audio.pause();
         return;
       }
+      trackEvent(beat.id, "play");
       if(window.DTPlayer?.setQueue){ DTPlayer.setQueue(beats, i, true); }
       else if(window.DTPlayTrack){ window.DTPlayTrack(beat, true); }
       window.__CURRENT_LIST__ = "featured";
@@ -115,20 +119,19 @@ export function renderFeatured(){
     buyBtn.onclick = async e=>{
       e.stopPropagation();
       if(getMode(beat)==='free'){ await proDownload(beat, buyBtn); return; }
-      buyBeatGo(beat);
+      // OPEN LICENCE POPUP - NOT REDIRECT
+      const mod = await import("../licence/licence.js");
+      mod.openLicencePopup(beat, beat.selected_licence||'basic');
     };
 
-    // FIXED - CLICK CARD = GO TO BEAT, PLAY BTN ONLY PLAYS
     card.addEventListener('click', e=>{
       if(e.target.closest(".f-play,.f-buy")) return;
-      // Single click = animate, Double click = go to beat
       animateTo(i);
     });
     card.addEventListener('dblclick', e=>{
       if(e.target.closest(".f-play,.f-buy")) return;
       e.preventDefault(); goToBeat(beat);
     });
-    // Title click = go to beat
     const titleEl = card.querySelector(".f-title");
     if(titleEl){
       titleEl.style.cursor="pointer";

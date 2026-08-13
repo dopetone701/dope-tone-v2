@@ -1,4 +1,4 @@
-// src/pages/beat-page.js - V6 HASH ONLY - FIXED ID
+// src/pages/beat-page.js - V7 BUY = LICENCE POPUP
 
 const PLAY_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5.14v13.72L19 12 8 5.14z"/></svg>`;
 const PAUSE_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M7 5h4v14H7V5zm6 0h4v14h-4V5z"/></svg>`;
@@ -10,24 +10,43 @@ const DOTS_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" width="18" height
 function escapeHTML(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 function fixPrice(v){ let p=Number(v); if(!Number.isFinite(p)) return 29.99; if(p>=1000) p/=100; return Number(p.toFixed(2)); }
 
-// FIXED - Gets ID from HASH query string
 function getId(){
   const hash = location.hash || '';
-  // hash is like #/beat?id=xxx or #/beat? id=xxx
   const queryPart = hash.split('?')[1] || '';
   const params = new URLSearchParams(queryPart);
   let id = params.get('id');
   if(id) return decodeURIComponent(id);
-  // Fallback: also check location.search for non-hash mode
   const searchParams = new URLSearchParams(location.search);
   id = searchParams.get('id');
   return id? decodeURIComponent(id) : null;
 }
 
 function getGlobalBeats(){ return window.__BEATS__ || window.DTStore?.beats || window.store?.beats || []; }
-function getLikes(){ try{return JSON.parse(localStorage.getItem("dopetone_likes")||"[]")}catch{return []} }
-function saveLikes(a){ localStorage.setItem("dopetone_likes", JSON.stringify(a)); }
-function isLiked(id){ return getLikes().includes(String(id)); }
+const STATS_API = 'https://dopetone-stats.dopetone701.workers.dev';
+let playedBeats = new Set();
+function logBeatEvent(id, type){ if(!id) return; fetch(`${STATS_API}/api/stats/event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({beatId:parseInt(id),eventType:type}),keepalive:true}).catch(()=>{}) }
+
+function getLikes(){ try{ return JSON.parse(localStorage.getItem("dopetone_likes")||'{}') }catch{ return {} } }
+function saveLikes(m){ try{ localStorage.setItem("dopetone_likes", JSON.stringify(m)); localStorage.setItem('dopetone_likes_count', String(Object.keys(m).length)); }catch{} }
+function isLiked(id){ if(id==null) return false; const m=getLikes(); const s=String(id).trim(); return!!(m[s]||m[Number(s)]); }
+function toggleLike(id){
+  const m=getLikes(); const k=String(id).trim(); const n=Number(k);
+  const now=!(m[k]||m[n]);
+  if(now){ m[k]=Date.now(); m[n]=Date.now(); }
+  else{ Object.keys(m).forEach(x=>{ if(String(x).trim()===k||Number(x)===n) delete m[x] }); }
+  saveLikes(m); return now;
+}
+async function getTrueStats(id){
+  try{
+    const r = await fetch(`${STATS_API}/api/stats/track/${id}`);
+    if(r.ok){ const j=await r.json(); return j; }
+  }catch{}
+  try{
+    const r2 = await fetch(`${STATS_API}/api/stats/${id}`);
+    if(r2.ok) return await r2.json();
+  }catch{}
+  return null;
+}
 
 async function getDominantColor(imgUrl){
   return new Promise(resolve=>{
@@ -88,8 +107,7 @@ export async function initBeatPage(){
     mount.innerHTML=`<div style="padding:60px;color:#fff">
       <h3>No ID Found</h3>
       <p>URL: ${escapeHTML(location.hash)}</p>
-      <p>You navigated to #/beat without id. Go back to beats and click a beat.</p>
-      <button onclick="location.hash='beats'" style="margin-top:12px;padding:8px 16px;background:#FF1E3C;color:white;border:none;border-radius:8px">Go Beats</button>
+      <button onclick="location.hash='#/beats'" style="margin-top:12px;padding:8px 16px;background:#FF1E3C;color:white;border:none;border-radius:8px">Go Beats</button>
     </div>`;
     return;
   }
@@ -101,6 +119,12 @@ export async function initBeatPage(){
     const beat=await res.json();
     if(beat.error) throw new Error("Beat not found");
 
+    let trueStats = null;
+    try{ trueStats = await getTrueStats(beat.id); }catch{}
+    if(trueStats){
+      beat.play_count = trueStats.plays?? trueStats.play_count?? trueStats.playCount?? beat.play_count;
+      beat.like_count = trueStats.likes?? trueStats.like_count?? trueStats.likeCount?? beat.like_count;
+    }
     const domColor=await getDominantColor(beat.cover_url);
     const rgb=`${domColor.r},${domColor.g},${domColor.b}`;
 
@@ -126,7 +150,7 @@ export async function initBeatPage(){
         <div class="beat-bg-gradient"></div>
         <div class="beat-content">
           <div class="beat-back-row">
-            <button class="beat-back-btn" onclick="location.hash='beats'">← Back</button>
+            <button class="beat-back-btn" onclick="location.hash='#/beats'">← Back</button>
           </div>
 
           <div class="beat-hero">
@@ -178,7 +202,7 @@ export async function initBeatPage(){
           <div class="beat-similar-section">
             <div class="beat-section-head">
               <div class="beat-section-title">More like ${escapeHTML(beat.title)}</div>
-              <button class="beat-back-btn" style="height:30px;font-size:12px" onclick="location.hash='beats'">Show all</button>
+              <button class="beat-back-btn" style="height:30px;font-size:12px" onclick="location.hash='#/beats'">Show all</button>
             </div>
             <div class="beat-sim-list" id="similarList"></div>
           </div>
@@ -194,12 +218,13 @@ export async function initBeatPage(){
     }
 
     function togglePlay(){
-      const audio=document.querySelector("audio") || window.__DT_AUDIO__;
+      const audioEl=document.querySelector("audio") || window.__DT_AUDIO__;
       const isCurrent=String(window.__CURRENT_BEAT__?.id)===String(beat.id);
-      const isPlaying=isCurrent && audio &&!audio.paused;
+      const isPlaying=isCurrent && audioEl &&!audioEl.paused;
       if(isPlaying){
-        audio.pause(); if(window.globalPlayer?.pause) window.globalPlayer.pause();
+        audioEl.pause(); if(window.globalPlayer?.pause) window.globalPlayer.pause();
       } else {
+        if(!playedBeats.has(String(beat.id))){ logBeatEvent(beat.id, 'play'); playedBeats.add(String(beat.id)); }
         const all=getGlobalBeats();
         let idx=all.findIndex(b=>String(b.id)===String(beat.id));
         if(idx===-1){ all.unshift(beat); idx=0; window.__BEATS__=all; }
@@ -221,11 +246,15 @@ export async function initBeatPage(){
 
     document.getElementById("likeBtn").onclick=(e)=>{
       const btn=e.currentTarget;
-      let likes=getLikes(); const idStr=String(beat.id); const had=likes.includes(idStr);
-      likes=had?likes.filter(x=>x!==idStr):[...likes,idStr];
-      saveLikes(likes);
-      btn.classList.toggle("is-liked",!had);
-      btn.innerHTML=!had?HEART_FILL:HEART_SVG;
+      const liked = toggleLike(beat.id);
+      btn.classList.toggle("is-liked", liked);
+      btn.innerHTML=liked?HEART_FILL:HEART_SVG;
+      const map=getLikes();
+      const total=Object.keys(map).length;
+      window.dispatchEvent(new CustomEvent('cc_like_updated',{detail:{beat_id:beat.id, beatId:beat.id, liked, count:total, perBeat:map}}));
+      window.dispatchEvent(new CustomEvent('cc_player_like_sync',{detail:{total, beat_id:beat.id, beatId:beat.id, liked}}));
+      window.dispatchEvent(new CustomEvent('cc_like_change',{detail:{beat_id:beat.id, liked}}));
+      logBeatEvent(beat.id, 'like');
     };
 
     document.getElementById("shareBtn2").onclick=(e)=>{
@@ -234,18 +263,15 @@ export async function initBeatPage(){
       else window.prompt("Copy link:", url);
     };
 
-    document.getElementById("cartBtn").onclick=()=>{
-      const cart=JSON.parse(localStorage.getItem("dopetone_cart")||"[]");
-      if(!cart.some(c=>String(c.id)===String(beat.id))){
-        cart.push({...beat, price:fixPrice(beat.price)});
-        localStorage.setItem("dopetone_cart", JSON.stringify(cart));
-        window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:cart.length}}));
-      }
-      window.Auth?.showToast?.("Added to cart");
-    };
+    // BUY + CART = LICENCE POPUP
+    async function openLicence(){
+      const mod = await import("../features/licence/licence.js");
+      mod.openLicencePopup(beat, beat.selected_licence||'basic');
+    }
 
+    document.getElementById("cartBtn").onclick=()=> openLicence();
     const buyBtn=document.getElementById("buyBtn");
-    if(buyBtn) buyBtn.onclick=()=>{ location.hash=`licence?id=${beat.id}`; };
+    if(buyBtn) buyBtn.onclick=()=> openLicence();
 
     const dlBtn=document.getElementById("downloadBtn");
     if(dlBtn){
@@ -318,22 +344,20 @@ export async function initBeatPage(){
           document.querySelectorAll(".dt-row-menu.active").forEach(m=>m.classList.remove("active"));
           if(!was) menu.classList.add("active");
         };
-        menu.onclick=(e)=>{
+        menu.onclick=async (e)=>{
           e.stopPropagation();
           const act=e.target.closest("button")?.dataset.act;
           if(!act) return;
           menu.classList.remove("active");
          if(act==="goto"){
-            location.hash=`beat?id=${encodeURIComponent(b.id)}`;
+            location.hash=`#/beat?id=${encodeURIComponent(b.id)}`;
             window.scrollTo({top:0, behavior:"smooth"});
             return;
           }
-          if(act==="cart"){
-            const cart=JSON.parse(localStorage.getItem("dopetone_cart")||"[]");
-            if(!cart.some(c=>String(c.id)===String(b.id))){ cart.push(b); localStorage.setItem("dopetone_cart", JSON.stringify(cart)); window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:cart.length}})); }
-            window.Auth?.showToast?.("Added to cart");
+          if(act==="cart" || act==="buy"){
+            const mod = await import("../features/licence/licence.js");
+            mod.openLicencePopup(b, b.selected_licence||'basic');
           }
-          if(act==="buy") location.hash=`licence?id=${b.id}`;
           if(act==="share"){
             const url=`${location.origin}/#/beat?id=${encodeURIComponent(b.id)}`;
             navigator.clipboard?.writeText(url).then(()=>window.Auth?.showToast?.("Link copied"));

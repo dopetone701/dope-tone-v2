@@ -8,18 +8,21 @@ let _onPlayerPlay = null;
 let _onPlayerPause = null;
 let _onPlayerEnded = null;
 
-// INJECTED - GO TO BEAT HASH ONLY
+const STATS_API="https://dopetone-stats.dopetone701.workers.dev";
+const trackEvent=(id,type)=>{if(!id)return;fetch(`${STATS_API}/api/stats/event`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({beatId:parseInt(id),eventType:type}),keepalive:true}).catch(()=>{})};
+
 function goToBeat(beat){
   if(!beat?.id) return;
-  location.hash = `beat?id=${encodeURIComponent(beat.id)}`;
+  location.hash = `#/beat?id=${encodeURIComponent(beat.id)}`;
 }
 function buyBeatGo(beat){
   let cart; try{ cart=JSON.parse(localStorage.getItem("dopetone_cart")||"[]"); }catch{ cart=[]; }
   if(!cart.some(x=>String(x.id)===String(beat.id))){
     cart.push(beat); localStorage.setItem("dopetone_cart",JSON.stringify(cart));
     window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:cart.length}}));
+    trackEvent(beat.id,"cart");
   }
-  location.hash = `licence?id=${encodeURIComponent(beat.id)}`;
+  location.hash = `#/licence?id=${encodeURIComponent(beat.id)}`;
 }
 window.goToBeat = goToBeat;
 
@@ -79,7 +82,9 @@ export function renderTrending(){
 
   const getPrice = (b)=>{
     if(b.is_free==1 || (b.monetization_mode||'').toLowerCase()==='free') return 'FREE';
-    return b.price? `$${b.price}` : (b.display_price? `$${b.display_price}` : '$9');
+    const raw=b.price??b.base_price??29.99;
+    let p=Number(raw); if(p>=1000) p/=100;
+    return `$${p.toFixed(2)}`;
   };
 
   grid.classList.add('trending-grid-v2');
@@ -164,10 +169,10 @@ export function renderTrending(){
         return;
       }
       currentId = id; activeBeatId = id; queueIndex = qIndex;
+      trackEvent(id,"play");
       window.globalPlayer?.play(qIndex, queue, "trending");
     };
     btn.onclick = playAction;
-    // FIXED - CARD CLICK = GO TO BEAT, PLAY BTN = PLAY ONLY
     card.onclick = (e) => {
       if (e.target.closest(".spotify-play")) return;
       const beat = queue.find(b=> String(b.id) === String(card.dataset.id));

@@ -1,8 +1,10 @@
 // ===============================
-// ARSENAL V2.8 - HASH ONLY FINAL - GO TO BEAT FIXED - META+BUY RESTORED
+// ARSENAL V2.9 - BUY = LICENCE POPUP - D1
 // ===============================
 
-const STATS_API = "https://all-beats-analytics-api.dopetone701.workers.dev";
+const STATS_API = "https://dopetone-stats.dopetone701.workers.dev";
+let playedBeats = new Set();
+function logBeatEvent(id, type){ if(!id) return; fetch(`${STATS_API}/api/stats/event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({beatId:parseInt(id),eventType:type}),keepalive:true}).catch(()=>{}) }
 
 const PLAY_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>`;
 const PAUSE_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7V5zm6 0h4v14h-4V5z"/></svg>`;
@@ -17,10 +19,17 @@ let activeBeats = [];
 let currentFilter = "all";
 let currentView = localStorage.getItem("dt_arsenal_view") || "list";
 
-// CORE DATA
 const getBeats = () => window.__BEATS__ || window.DTStore?.beats || window.store?.beats || [];
-const getLikes = () => { try { return JSON.parse(localStorage.getItem("dopetone_likes") || "[]"); } catch { return []; } };
-const saveLikes = likes => localStorage.setItem("dopetone_likes", JSON.stringify(likes));
+const getLikes = () => { try{ return JSON.parse(localStorage.getItem("dopetone_likes")||'{}') }catch{ return {} } };
+const saveLikes = m => { try{ localStorage.setItem("dopetone_likes", JSON.stringify(m)); localStorage.setItem('dopetone_likes_count', String(Object.keys(m).length)); }catch{} };
+const isLiked = id => { if(id==null) return false; const m=getLikes(); const s=String(id).trim(); return!!(m[s]||m[Number(s)]); };
+const toggleLike = id => {
+  const m=getLikes(); const k=String(id).trim(); const n=Number(k);
+  const now=!(m[k]||m[n]);
+  if(now){ m[k]=Date.now(); m[n]=Date.now(); }
+  else{ Object.keys(m).forEach(x=>{ if(String(x).trim()===k||Number(x)===n) delete m[x] }); }
+  saveLikes(m); return now;
+};
 const isSignedIn = () => !!window.currentUser || !!localStorage.getItem("dopetone_user") || !!localStorage.getItem("sb-access-token");
 const getMode = beat => {
   const mode = String(beat.monetization_mode || "").toLowerCase();
@@ -29,37 +38,33 @@ const getMode = beat => {
 };
 function fixPrice(v){ let p=Number(v); if(!Number.isFinite(p)) return 29.99; if(p>=1000) p/=100; return Number(p.toFixed(2)); }
 
-// ===============================
-// GO TO BEAT - INJECTED FIXED - HASH ONLY
-// ===============================
 function goToBeat(beat){
   if(!beat?.id) return;
   closeAllMenus();
-  location.hash = `beat?id=${encodeURIComponent(beat.id)}`;
+  const id = encodeURIComponent(beat.id);
+  location.hash = `#/beat?id=${id}`;
+  window.scrollTo({top:0, behavior:'smooth'});
 }
-function buyBeat(beat){
-  let cart; try { cart = JSON.parse(localStorage.getItem("dopetone_cart") || "[]"); } catch { cart = []; }
-  if(!cart.some(x => String(x.id) === String(beat.id))){
-    cart.push({...beat, price: fixPrice(beat.price)});
-    localStorage.setItem("dopetone_cart", JSON.stringify(cart));
-    window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:cart.length}}));
-    window.Auth?.showToast?.(`Added ${beat.title} to cart`);
-  }
-  location.hash = `licence?id=${encodeURIComponent(beat.id)}`;
+// NEW BUY = OPEN LICENCE POPUP
+async function buyBeat(beat){
+  const mod = await import("../licence/licence.js");
+  mod.openLicencePopup(beat, beat.selected_licence||'basic');
 }
 function addToCartOnly(beat){
   let cart; try { cart = JSON.parse(localStorage.getItem("dopetone_cart") || "[]"); } catch { cart = []; }
   if(!cart.some(x => String(x.id) === String(beat.id))){
-    cart.push({...beat, price: fixPrice(beat.price)});
+    cart.push({...beat, price: fixPrice(beat.price), selected_licence:'basic'});
     localStorage.setItem("dopetone_cart", JSON.stringify(cart));
     window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:cart.length}}));
     window.Auth?.showToast?.(`Added ${beat.title} to cart`);
+    logBeatEvent(beat.id,'cart');
   }
 }
 window.goToBeat = goToBeat;
 window.buyBeat = buyBeat;
 
 function destroyWaves(){ if(observer){ observer.disconnect(); observer=null; } waveCache.forEach(w=>{ try{w.destroy()}catch{}}); waveCache.clear(); }
+
 function ensureWave(row, beat){
   if(!row || row.dataset.waveReady==="1") return;
   if(!beat?.mp3_url) return;
@@ -67,18 +72,39 @@ function ensureWave(row, beat){
   const WS=window.WaveSurfer || (typeof WaveSurfer!=="undefined"?WaveSurfer:null); if(!WS?.create) return;
   row.dataset.waveReady="1";
   try{
-    const wave=WS.create({ container, waveColor:"rgba(255,255,255,.16)", progressColor:"#FF1E3C", cursorWidth:0, height:38, barWidth:2, barGap:2, normalize:true, interact:true, partialRender:true });
+    const wave=WS.create({
+      container,
+      waveColor:"rgba(255,255,255,.16)",
+      progressColor:"#FF1E3C",
+      cursorWidth:0,
+      height:38,
+      barWidth:2,
+      barGap:2,
+      barRadius:2,
+      normalize:true,
+      interact:true,
+      partialRender:true,
+      autoCenter:false,
+      hideScrollbar:true
+    });
     wave.load(beat.mp3_url);
     wave.on("error",()=>{ row.dataset.waveReady="0"; waveCache.delete(String(beat.id)); });
+    wave.on("ready", ()=>{
+      const a = document.querySelector("audio") || window.__DT_AUDIO__;
+      if(a && String(window.__CURRENT_BEAT__?.id)===String(beat.id) && a.duration){
+        wave.seekTo(a.currentTime / a.duration);
+      }
+    });
     row.__wave=wave; waveCache.set(String(beat.id),wave);
   }catch{ row.dataset.waveReady="0"; }
 }
+
 function closeAllMenus(){ document.querySelectorAll(".dt-row-menu.active").forEach(m=>m.classList.remove("active")); document.querySelectorAll(".wave-row").forEach(r=>r.style.zIndex="1"); }
 document.addEventListener("click",e=>{ if(!e.target.closest(".dt-dots-wrap")) closeAllMenus(); });
 
 function createDotsMenu(beat){
   const mode=getMode(beat);
-  const liked=getLikes().includes(String(beat.id));
+  const liked=isLiked(beat.id);
   const wrap=document.createElement("div"); wrap.className="dt-dots-wrap";
   wrap.innerHTML=`
     <button class="wave-dots" type="button">${DOTS_SVG}</button>
@@ -95,7 +121,7 @@ function createDotsMenu(beat){
   btn.onclick=e=>{ e.stopPropagation(); const was=menu.classList.contains("active"); closeAllMenus(); if(!was){ menu.classList.add("active"); wrap.closest(".wave-row").style.zIndex="999"; } };
   menu.onclick=e=>{
     e.stopPropagation(); const act=e.target.closest("button")?.dataset.act; if(!act) return; closeAllMenus();
-    if(act==="goto") goToBeat(beat);
+    if(act==="goto"){ e.preventDefault(); goToBeat(beat); return; }
     if(act==="playlist"){
       const pls=JSON.parse(localStorage.getItem("dopetone_playlists")||"[]"); let my=pls.find(p=>p.name==="My Playlist");
       if(!my){ my={id:Date.now(),name:"My Playlist",beats:[]}; pls.push(my); }
@@ -103,12 +129,17 @@ function createDotsMenu(beat){
       localStorage.setItem("dopetone_playlists",JSON.stringify(pls)); window.Auth?.showToast?.("Added to playlist");
     }
     if(act==="like"){
-      let likes=getLikes(); const id=String(beat.id); const cl=likes.includes(id); likes=cl?likes.filter(x=>x!==id):[...likes,id]; saveLikes(likes);
-      const row=document.querySelector(`.wave-row[data-beat-id="${beat.id}"] .wave-heat`); if(row){ row.classList.toggle("is-liked",!cl); row.innerHTML=!cl?HEART_FILL:HEART_SVG; }
+      const nowLiked = toggleLike(beat.id);
+      const row=document.querySelector(`.wave-row[data-beat-id="${beat.id}"] .wave-heat`);
+      if(row){ row.classList.toggle("is-liked", nowLiked); row.innerHTML=nowLiked?HEART_FILL:HEART_SVG; }
+      const map=getLikes(); const total=Object.keys(map).length;
+      window.dispatchEvent(new CustomEvent('cc_like_updated',{detail:{beat_id:beat.id, beatId:beat.id, liked:nowLiked, count:total, perBeat:map}}));
+      window.dispatchEvent(new CustomEvent('cc_player_like_sync',{detail:{total, beat_id:beat.id, beatId:beat.id, liked:nowLiked}}));
+      if(nowLiked) logBeatEvent(beat.id, 'like');
     }
     if(act==="share"){
       const url=`${location.origin}/#/beat?id=${encodeURIComponent(beat.id)}`;
-      if(navigator.clipboard) navigator.clipboard.writeText(url).then(()=>window.Auth?.showToast?.("Link copied - #/beat?id="));
+      if(navigator.clipboard) navigator.clipboard.writeText(url).then(()=>window.Auth?.showToast?.("Link copied"));
       else prompt("Copy:",url);
     }
     if(act==="download") downloadBeat(beat);
@@ -119,7 +150,7 @@ function createDotsMenu(beat){
 }
 
 function createRow(beat,index,list){
-  const mode=getMode(beat); const liked=getLikes().includes(String(beat.id));
+  const mode=getMode(beat); const liked=isLiked(beat.id);
   const row=document.createElement("div"); row.className="wave-row"; row.dataset.beatId=beat.id; row.dataset.mode=mode;
   row.innerHTML=`
     <div class="wave-left"><div class="wave-cover-wrap"><img src="${beat.cover_url||''}" loading="lazy" alt=""><button class="wave-play" type="button">${PLAY_SVG}</button></div></div>
@@ -127,18 +158,26 @@ function createRow(beat,index,list){
     <div class="wave-bar"></div>
     <div class="wave-actions"><button class="wave-heat ${liked?"is-liked":""}" type="button">${liked?HEART_FILL:HEART_SVG}</button><button class="wave-buy ${mode==="free"?"is-free":"is-paid"}" type="button">${mode==="free"?"FREE":`$${fixPrice(beat.price).toFixed(2)}`}</button></div>`;
   row.querySelector(".wave-actions").appendChild(createDotsMenu(beat));
-  // ROW CLICK = PLAY, DOUBLE CLICK = GO TO BEAT
   row.onclick=e=>{ const t=e.target.closest(".wave-play,.wave-heat,.wave-buy,.wave-bar,.dt-dots-wrap"); if(t) return; row.querySelector(".wave-play").click(); };
   row.ondblclick=e=>{ const t=e.target.closest(".wave-play,.wave-heat,.wave-buy,.wave-bar,.dt-dots-wrap"); if(t) return; e.preventDefault(); goToBeat(beat); };
+
   row.querySelector(".wave-play").onclick=e=>{
     e.stopPropagation(); ensureWave(row,beat); window.__CURRENT_BEAT__=beat;
+    if(!playedBeats.has(String(beat.id))){ logBeatEvent(beat.id, 'play'); playedBeats.add(String(beat.id)); }
     if(window.globalPlayer?.play) window.globalPlayer.play(index,list,"wave");
   };
+
   row.querySelector(".wave-heat").onclick=e=>{
-    e.stopPropagation(); let likes=getLikes(); const id=String(beat.id); const cl=likes.includes(id);
-    if(cl) likes=likes.filter(x=>x!==id); else { likes.push(id); fetch(`${STATS_API}/api/stats/event`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({beat_id:Number(beat.id),event_type:"like"})}).catch(()=>{}); }
-    saveLikes(likes); const btn=e.currentTarget; btn.classList.toggle("is-liked",!cl); btn.innerHTML=!cl?HEART_FILL:HEART_SVG; btn.classList.add("pop"); setTimeout(()=>btn.classList.remove("pop"),300);
+    e.stopPropagation();
+    const nowLiked = toggleLike(beat.id);
+    const btn=e.currentTarget; btn.classList.toggle("is-liked", nowLiked); btn.innerHTML=nowLiked?HEART_FILL:HEART_SVG;
+    btn.classList.add("pop"); setTimeout(()=>btn.classList.remove("pop"),300);
+    const map=getLikes(); const total=Object.keys(map).length;
+    window.dispatchEvent(new CustomEvent('cc_like_updated',{detail:{beat_id:beat.id, beatId:beat.id, liked:nowLiked, count:total, perBeat:map}}));
+    window.dispatchEvent(new CustomEvent('cc_player_like_sync',{detail:{total, beat_id:beat.id, beatId:beat.id, liked:nowLiked}}));
+    if(nowLiked) logBeatEvent(beat.id, 'like');
   };
+
   row.querySelector(".wave-buy").onclick=e=>{ e.stopPropagation(); mode==="paid"?buyBeat(beat):downloadBeat(beat,e.currentTarget); };
   return row;
 }
@@ -151,6 +190,7 @@ function renderRows(list){
   activeBeats.forEach((beat,i)=>{ frag.appendChild(createRow(beat,i,activeBeats)); });
   container.appendChild(frag); setupLazyWaves();
 }
+
 function setupLazyWaves(){
   if(observer) observer.disconnect();
   observer=new IntersectionObserver(entries=>{
@@ -159,14 +199,16 @@ function setupLazyWaves(){
       const row=entry.target; const beat=activeBeats.find(b=>String(b.id)===String(row.dataset.beatId));
       if(beat) ensureWave(row,beat); observer.unobserve(row);
     });
-  },{root:null,rootMargin:"0px 0px 450px 0px",threshold:0});
+  },{root:null,rootMargin:"0px 0px 450px 0px",threshold:0.1});
   document.querySelectorAll("#waveList .wave-row").forEach(row=>observer.observe(row));
 }
+
 export function renderWave(limit=10){
   const beats=getBeats(); if(!beats.length){ const c=document.getElementById("waveList"); if(c) c.innerHTML=`<div style="padding:12px;color:#9CA3AF">No beats</div>`; return; }
   let list=beats; if(currentFilter!=="all") list=beats.filter(b=>String(b.genre||"").toLowerCase().includes(currentFilter));
   renderRows(list.slice(0,limit||10));
 }
+
 function injectPills(){
   const mount=document.getElementById("pillsMount"); if(!mount) return;
   const genres=[...new Set(getBeats().map(b=>b.genre).filter(Boolean))].slice(0,12);
@@ -192,6 +234,7 @@ function injectPills(){
   }
   injectArsenalStyles(); setupPillsDragScroll(scroll);
 }
+
 function setupPillsDragScroll(list){
   if(!list) return; if(list.dataset.dragInit==="1") return; list.dataset.dragInit="1";
   let isDown=false,startX=0,startScroll=0,moved=false;
@@ -208,6 +251,7 @@ function setupPillsDragScroll(list){
   list.addEventListener("pointercancel",()=>{ isDown=false; moved=false; list.classList.remove("dragging"); list.dataset.hasDragged="0"; });
   list.querySelectorAll(".pill").forEach(pill=>{ pill.style.pointerEvents="auto"; });
 }
+
 function injectArsenalStyles(){
   if(document.getElementById("dt-arsenal-fix")) return;
   const s=document.createElement("style"); s.id="dt-arsenal-fix";
@@ -246,6 +290,7 @@ function injectArsenalStyles(){
   `;
   document.head.appendChild(s);
 }
+
 async function downloadBeat(beat, btn){
   if(!isSignedIn()){ window.Auth?.openModal?.(false); return; }
   if(btn){ btn.disabled=true; const orig=btn.innerHTML; btn.innerHTML="..."; setTimeout(()=>{ btn.innerHTML=orig; btn.disabled=false; },1500); }
@@ -254,15 +299,38 @@ async function downloadBeat(beat, btn){
     const blob=await r.blob(); const url=URL.createObjectURL(blob);
     const a=document.createElement("a"); a.href=url; a.download=`${beat.title}.mp3`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
     window.Auth?.showToast?.("Download started");
+    logBeatEvent(beat.id, 'download');
   }catch(e){ console.error(e); }
 }
+
 export function renderBeatsArsenal(){ return `<div class="arsenal-inner"><div class="view-toggle"><div class="toggle-fixed"><h2 class="arsenal-bar-title">ARSENAL</h2><div class="pills-scroll" id="pillsMount"></div></div></div><div id="waveList" class="wave-list"></div></div>`; }
 export function initBeatsArsenal(){ injectPills(); renderWave(); injectArsenalStyles(); }
 window.renderWave=renderWave;
+
 (function(){
-  let ticking=false; const getAudio=()=>document.querySelector("audio")||window.__DT_AUDIO__;
-  function sync(){ ticking=false; const a=getAudio(); if(!a||a.paused||!a.duration||!window.__CURRENT_BEAT__?.id) return; const p=a.currentTime/a.duration; document.querySelectorAll(".wave-row").forEach(row=>{ if(String(row.dataset.beatId)!==String(window.__CURRENT_BEAT__.id)) return; const w=row.__wave; if(w) w.seekTo(p); }); }
+  let ticking=false;
+  const getAudio=()=>document.querySelector("audio")||window.__DT_AUDIO__;
+  function sync(){
+    ticking=false;
+    const a=getAudio();
+    if(!a||a.paused||!a.duration||!window.__CURRENT_BEAT__?.id) return;
+    const p=a.currentTime/a.duration;
+    document.querySelectorAll(".wave-row").forEach(row=>{
+      if(String(row.dataset.beatId)!==String(window.__CURRENT_BEAT__.id)) return;
+      const w=row.__wave;
+      if(w && w.getDuration && w.getDuration()>0){
+        try{ w.seekTo(p); }catch{}
+      }
+    });
+  }
   function req(){ if(ticking) return; ticking=true; requestAnimationFrame(sync); }
   ["timeupdate","play","pause","seeked"].forEach(ev=>{ document.addEventListener(ev,req,true); });
-  document.addEventListener("click",e=>{ const bar=e.target.closest(".wave-bar"); if(!bar) return; const a=getAudio(); if(!a?.duration) return; const r=bar.getBoundingClientRect(); const pr=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); a.currentTime=pr*a.duration; req(); });
+  document.addEventListener("click",e=>{
+    const bar=e.target.closest(".wave-bar");
+    if(!bar) return;
+    const a=getAudio(); if(!a?.duration) return;
+    const r=bar.getBoundingClientRect();
+    const pr=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+    a.currentTime=pr*a.duration; req();
+  });
 })();

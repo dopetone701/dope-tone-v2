@@ -1,4 +1,4 @@
-// src/core/menu-armburger.js - FIXED - ALL EXPORTS
+// src/core/menu-armburger.js - FIXED - ALL EXPORTS - D1 SAFE + LICENCE POPUP
 export function initArmburger(){
   const btn=document.getElementById("armburgerBtn");
   const menu=document.getElementById("armburgerMenu");
@@ -19,9 +19,23 @@ export function openMenuOverlay(){
   document.getElementById("menuOverlay")?.classList.add("active");
 }
 
+function getLikesIdsSafe(){
+  try{
+    const raw = localStorage.getItem("dopetone_likes");
+    if(!raw) return [];
+    const d = JSON.parse(raw);
+    if(Array.isArray(d)) return d.map(String);
+    if(d && typeof d === 'object') return Object.keys(d).map(String);
+    return [];
+  }catch{return [];}
+}
+function isLikedSafe(id){
+  return getLikesIdsSafe().includes(String(id));
+}
+
 export function createDotsMenu(beat, handlers){
   const mode=String(beat.monetization_mode||beat.monetizationMode||"paid").toLowerCase();
-  const liked=JSON.parse(localStorage.getItem("dopetone_likes")||"[]").includes(String(beat.id));
+  const liked=isLikedSafe(beat.id);
   const price=Number(beat.price>=1000?beat.price/100:beat.price||29.99).toFixed(2);
   const wrap=document.createElement("div");
   wrap.className="dt-dots-wrap pyramid-dots-wrap";
@@ -54,11 +68,19 @@ export function createDotsMenu(beat, handlers){
       });
     }
   };
-  menu.onclick=e=>{
+  menu.onclick=async e=>{
     e.stopPropagation();
     const act=e.target.closest("button")?.dataset.act;
     if(!act) return;
     closeAllMenus();
+
+    // BUY & CART = LICENCE POPUP
+    if(act==="buy" || act==="cart"){
+      const mod = await import("../features/licence/licence.js");
+      mod.openLicencePopup(beat, beat.selected_licence||'basic');
+      return;
+    }
+
     handlers?.[act]?.(beat);
   };
   return wrap;

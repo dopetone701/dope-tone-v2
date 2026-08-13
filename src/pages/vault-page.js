@@ -1,9 +1,40 @@
 // ============================================================
-// DOPE TONE VAULT — RESPONSIVE GALLERY V3 - REAL DATA + PLAY + FIXED MENU
-// FIXED: topbar Samples/Packs/Free opens vault with correct tab selected
+// DOPE TONE VAULT — RESPONSIVE GALLERY V3 - FIXED + D1
 // ============================================================
 import { createDotsMenu, closeAllMenus } from "../core/menu-armburger.js";
 import { store } from "../core/store.js";
+
+const STATS_API="https://dopetone-stats.dopetone701.workers.dev";
+const trackEvent=(id,type)=>{if(!id)return;fetch(`${STATS_API}/api/stats/event`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({beatId:parseInt(id),eventType:type}),keepalive:true}).catch(()=>{})};
+
+function getLikesSafe(){
+  try{
+    const raw=localStorage.getItem("dopetone_likes");
+    if(!raw) return [];
+    const d=JSON.parse(raw);
+    if(Array.isArray(d)) return d.map(String);
+    if(d && typeof d==='object') return Object.keys(d).map(String);
+    return [];
+  }catch{return [];}
+}
+function toggleLikeSafe(id){
+  const raw=localStorage.getItem("dopetone_likes");
+  let data;
+  try{ data=JSON.parse(raw||"{}"); }catch{ data={}; }
+  const sid=String(id);
+  if(Array.isArray(data)){
+    let arr=data.map(String);
+    const has=arr.includes(sid);
+    arr=has?arr.filter(x=>x!==sid):[...arr,sid];
+    localStorage.setItem("dopetone_likes",JSON.stringify(arr));
+    if(!has) trackEvent(id,"like");
+    return!has;
+  } else {
+    const obj = (data && typeof data==='object')? data : {};
+    if(obj[sid]){ delete obj[sid]; localStorage.setItem("dopetone_likes",JSON.stringify(obj)); return false; }
+    else { obj[sid]=Date.now(); localStorage.setItem("dopetone_likes",JSON.stringify(obj)); trackEvent(id,"like"); return true; }
+  }
+}
 
 export function renderVaultPage(){
   return `
@@ -29,11 +60,11 @@ export async function initVaultPage(){
     const s=document.createElement("style");
     s.id="vault-menu-fix";
     s.textContent=`
-    .yt-music-grid,.vault-section,.yt-track { overflow: visible!important; }
-    .yt-track { position: relative; z-index: 1; }
-    .yt-track:has(.pyramid-menu.active) { z-index: 9999!important; }
-    .dt-dots-wrap,.pyramid-dots-wrap { overflow: visible!important; position: relative; }
-    .pyramid-menu.dt-row-menu { position: fixed!important; z-index: 99999!important; }
+   .yt-music-grid,.vault-section,.yt-track { overflow: visible!important; }
+   .yt-track { position: relative; z-index: 1; }
+   .yt-track:has(.pyramid-menu.active) { z-index: 9999!important; }
+   .dt-dots-wrap,.pyramid-dots-wrap { overflow: visible!important; position: relative; }
+   .pyramid-menu.dt-row-menu { position: fixed!important; z-index: 99999!important; }
     `;
     document.head.appendChild(s);
   }
@@ -144,7 +175,6 @@ export async function initVaultPage(){
     </div>
   `;
 
-  // --- TAB FROM URL - FIXED NO REPLACE STATE BUG ---
   function getTabFromHash(){
     const h = (location.hash || "").toLowerCase();
     if(h.includes("tab=samples")) return "samples";
@@ -178,12 +208,10 @@ export async function initVaultPage(){
   document.getElementById("viewAllBeats")?.addEventListener("click",()=>{ location.hash="#/beats"; });
   document.getElementById("openFreeBeats")?.addEventListener("click",()=>{ location.hash="#/beats"; });
 
-  // INITIAL - FROM TOPBAR
   const initialTab = getTabFromHash();
   showTab(initialTab);
   setTimeout(()=>showTab(getTabFromHash()), 100);
 
-  // GLOBAL LISTENER - STAYS ALIVE EVEN WHEN ROUTER DOESN'T RE-INIT VAULT
   if(!window._vaultHashListener){
     window._vaultHashListener = true;
     window.addEventListener("hashchange", ()=>{
@@ -200,7 +228,6 @@ export async function initVaultPage(){
         samples: document.getElementById("samplesSection"),
         free: document.getElementById("freeSection")
       };
-      // if vault not mounted yet, router will mount and initialTab will handle
       if(!secs.beats) return;
 
       document.querySelectorAll(".vault-tab").forEach(el=>el.classList.remove("active"));
@@ -209,7 +236,6 @@ export async function initVaultPage(){
     });
   }
 
-  // REAL PLAY + ARMBURGER MENU FIXED
   function goToBeat(beat){ if(!beat?.id) return; closeAllMenus(); location.hash=`#/beat?id=${encodeURIComponent(beat.id)}`; }
   function playReal(beat, index){
     window.__CURRENT_BEAT__=beat;
@@ -219,6 +245,7 @@ export async function initVaultPage(){
     localStorage.setItem('dt_list_v2','vault');
     localStorage.setItem('dt_index_v2',String(index));
     localStorage.setItem('dt_queue_v2',JSON.stringify(demoBeats));
+    trackEvent(beat.id,"play");
     if(window.DTPlayer?.setQueue){ window.DTPlayer.setQueue(demoBeats, index, true); }
     else if(window.globalPlayer?.play){ window.globalPlayer.play(index, demoBeats, "vault"); }
     else if(window.DTPlayTrack){ window.DTPlayTrack(beat, true); }
@@ -236,12 +263,20 @@ export async function initVaultPage(){
     if(oldMenu){
       const handlers={
         goto:(b)=>{ goToBeat(b); },
-        playlist:(b)=>{ const pls=JSON.parse(localStorage.getItem("dopetone_playlists")||"[]"); let my=pls.find(p=>p.name==="My Playlist"); if(!my){ my={id:Date.now(),name:"My Playlist",beats:[]}; pls.push(my);} if(!my.beats.includes(String(b.id))) my.beats.push(String(b.id)); localStorage.setItem("dopetone_playlists",JSON.stringify(pls)); },
-        like:(b)=>{ let likes=JSON.parse(localStorage.getItem("dopetone_likes")||"[]"); const id=String(b.id); const cl=likes.includes(id); likes=cl?likes.filter(x=>x!==id):[...likes,id]; localStorage.setItem("dopetone_likes",JSON.stringify(likes)); },
-        share:(b)=>{ const url=`${location.origin}/#/beat?id=${encodeURIComponent(b.id)}`; navigator.clipboard?.writeText(url); },
-        download:(b)=>{},
-        cart:(b)=>{ let cart=JSON.parse(localStorage.getItem("dopetone_cart")||"[]"); if(!cart.some(x=>String(x.id)===String(b.id))){ cart.push(b); localStorage.setItem("dopetone_cart",JSON.stringify(cart)); window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:cart.length}})); } },
-        buy:(b)=>{ let cart=JSON.parse(localStorage.getItem("dopetone_cart")||"[]"); if(!cart.some(x=>String(x.id)===String(b.id))){ cart.push(b); localStorage.setItem("dopetone_cart",JSON.stringify(cart)); } location.hash=`#/licence?id=${encodeURIComponent(b.id)}`; }
+        playlist:(b)=>{
+          try{
+            const pls=JSON.parse(localStorage.getItem("dopetone_playlists")||"[]");
+            let my=pls.find(p=>p.name==="My Playlist");
+            if(!my){ my={id:Date.now(),name:"My Playlist",beats:[]}; pls.push(my);}
+            if(!my.beats.includes(String(b.id))) my.beats.push(String(b.id));
+            localStorage.setItem("dopetone_playlists",JSON.stringify(pls));
+          }catch{}
+        },
+        like:(b)=>{ toggleLikeSafe(b.id); },
+        share:(b)=>{ const url=`${location.origin}/#/beat?id=${encodeURIComponent(b.id)}`; navigator.clipboard?.writeText(url); trackEvent(b.id,"share"); },
+        download:(b)=>{ trackEvent(b.id,"download"); },
+        cart:(b)=>{ let cart=JSON.parse(localStorage.getItem("dopetone_cart")||"[]"); if(!cart.some(x=>String(x.id)===String(b.id))){ cart.push(b); localStorage.setItem("dopetone_cart",JSON.stringify(cart)); window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:cart.length}})); trackEvent(b.id,"cart"); } },
+        buy:(b)=>{ let cart=JSON.parse(localStorage.getItem("dopetone_cart")||"[]"); if(!cart.some(x=>String(x.id)===String(b.id))){ cart.push(b); localStorage.setItem("dopetone_cart",JSON.stringify(cart)); trackEvent(b.id,"cart"); } location.hash=`#/licence?id=${encodeURIComponent(b.id)}`; }
       };
       const dots = createDotsMenu(beat, handlers);
       oldMenu.replaceWith(dots);

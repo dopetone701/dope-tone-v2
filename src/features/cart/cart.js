@@ -1,10 +1,13 @@
-// src/features/cart/cart.js - FINAL FIXED V7 - TRUE BASIC PRICING + COLOR ADOPTION
+// src/features/cart/cart.js - FINAL FIXED V7 - TRUE BASIC + D1 + HASH
 
 const PLAY_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8 5.14v13.72L19 12 8 5.14z"/></svg>`;
 const PAUSE_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M7 5h4v14H7V5zm6 0h4v14h-4V5z"/></svg>`;
 
 const IMAGE_BASE = new URL("../../../public/images", import.meta.url).href;
 const img = (p) => `${IMAGE_BASE}/${p}`;
+
+const STATS_API="https://dopetone-stats.dopetone701.workers.dev";
+const trackEvent=(id,type)=>{if(!id)return;fetch(`${STATS_API}/api/stats/event`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({beatId:parseInt(id),eventType:type}),keepalive:true}).catch(()=>{})};
 
 const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 const fix = v => { let p=Number(v); if(!Number.isFinite(p)) return 29.99; if(p>=1000) p/=100; return Number(p.toFixed(2)); };
@@ -15,23 +18,20 @@ function getCart(){ try{return JSON.parse(localStorage.getItem("dopetone_cart")|
 function saveCart(c){ localStorage.setItem("dopetone_cart", JSON.stringify(c)); window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:c.length}})); }
 function getBeats(){ return window.__BEATS__ || window.DTStore?.beats || []; }
 
-// TRUE PRICING - BASIC IS TRUTH
 function getBasicPrice(beat){
-  // this is the real track price
   const raw = beat.price?? beat.base_price?? beat.basic_price?? 29.99;
   return fix(raw);
 }
 function licencePrice(beat, lic){
   lic = String(lic).toLowerCase();
-  const basic = getBasicPrice(beat); // <-- TRUE PRICE FROM D1
+  const basic = getBasicPrice(beat);
   if(lic==="free") return 0;
   if(lic==="basic") return basic;
-  if(lic==="pro") return fix(basic * 2.2); // PRO = BASIC * 2.2
-  if(lic==="exclusive") return fix(Math.max(basic * 10, 149)); // EXCLUSIVE = BASIC * 10
+  if(lic==="pro") return fix(basic * 2.2);
+  if(lic==="exclusive") return fix(Math.max(basic * 10, 149));
   return basic;
 }
 
-// DOMINANT COLOR - RESTORED
 async function getDominantColor(url){
   return new Promise(resolve=>{
     const im=new Image(); im.crossOrigin="anonymous"; im.src=url;
@@ -97,7 +97,12 @@ export async function initCart(){
         <button class="sum-check" id="goCheck">Checkout • $${total.toFixed(2)}</button>
         <div class="sum-safe">🔒 Secure • Instant Delivery</div>
       </div>`;
-    document.getElementById("goCheck").onclick=()=> location.hash = total===0? 'beats' : `licence?id=${cur[0]?.id||''}&lic=${cur[0]?.selected_licence||'basic'}`;
+    document.getElementById("goCheck").onclick=()=>{
+      if(total===0){ location.hash="#/beats"; return; }
+      cur.forEach(b=> trackEvent(b.id,"checkout"));
+      const first=cur[0];
+      location.hash = `#/licence?id=${encodeURIComponent(first?.id||'')}&lic=${first?.selected_licence||'basic'}`;
+    };
   }
 
   function drawEmpty(){
@@ -108,7 +113,7 @@ export async function initCart(){
           <img src="${img("cart-empty.png")}" class="empty-img" alt="empty" />
           <h2>Your Cart Is Empty</h2>
           <p>Add some fire. Beats you add will live here.</p>
-          <button class="btn-red" onclick="location.hash='beats'">Browse Beats</button>
+          <button class="btn-red" onclick="location.hash='#/beats'">Browse Beats</button>
         </div>
       </div>`;
   }
@@ -162,7 +167,6 @@ export async function initCart(){
           </div>
         </div>`;
 
-      // RESTORE COLOR ADOPTION - THIS WAS MISSING
       getDominantColor(beat.cover_url).then(col=>{
         const bg=card.querySelector(".c-card-bg");
         if(bg){
@@ -172,7 +176,6 @@ export async function initCart(){
         card.style.boxShadow = `0 0 0 1px rgba(${col.r},${col.g},${col.b},0.12), 0 8px 24px rgba(${col.r},${col.g},${col.b},0.18)`;
       });
 
-      // PLAY TOGGLE FIXED
       card.querySelector("[data-play]").onclick=()=>{
         const all=getBeats();
         let idx=all.findIndex(b=>String(b.id)===String(beat.id));
@@ -180,21 +183,16 @@ export async function initCart(){
         const audio=document.querySelector("audio")||window.__DT_AUDIO__;
         const isPlaying = all[window.__CURRENT_INDEX__] && String(all[window.__CURRENT_INDEX__].id)===String(beat.id) && audio &&!audio.paused;
         if(isPlaying){ audio.pause(); window.globalPlayer?.pause?.(); }
-        else { window.globalPlayer?.play?.(idx, all, "cart"); }
+        else { window.globalPlayer?.play?.(idx, all, "cart"); trackEvent(beat.id,"play"); }
       };
 
-      // REMOVE - NO FULL RERENDER
       card.querySelector("[data-remove]").onclick=()=>{
         const newCart=getCart().filter(b=>String(b.id)!==String(beat.id));
         saveCart(newCart);
         card.style.transition="all.18s"; card.style.transform="scale(.97)"; card.style.opacity="0";
-        setTimeout(()=>{
-          card.remove();
-          if(getCart().length===0) drawEmpty(); else updateSummary();
-        },180);
+        setTimeout(()=>{ card.remove(); if(getCart().length===0) drawEmpty(); else updateSummary(); },180);
       };
 
-      // LICENCE TOGGLE - NO BLINK - UPDATE IN PLACE
       card.querySelectorAll("[data-lic]").forEach(pill=>{
         pill.onclick=()=>{
           const newLic=pill.dataset.lic;
@@ -203,7 +201,6 @@ export async function initCart(){
           if(!item) return;
           item.selected_licence=newLic;
           saveCart(allCart);
-          // update only this card
           card.querySelectorAll(".c-pill").forEach(p=>p.classList.toggle("on", p.dataset.lic===newLic));
           card.querySelector("[data-price]").textContent=`$${licencePrice(item,newLic).toFixed(2)}`;
           updateSummary();
@@ -211,27 +208,20 @@ export async function initCart(){
       });
 
       card.querySelector("[data-licview]").onclick=async()=>{
-  const mod = await import("../licence/licence.js");
-  mod.openLicencePopup(beat, beat.selected_licence||'basic', (newLic, newPrice)=>{
-    // no blink update
-    card.querySelectorAll(".c-pill").forEach(p=>p.classList.toggle("on", p.dataset.lic===newLic));
-    card.querySelector("[data-price]").textContent=`$${newPrice.toFixed(2)}`;
-    const cur=JSON.parse(localStorage.getItem("dopetone_cart")||"[]");
-    const it=cur.find(b=>String(b.id)===String(beat.id));
-    if(it){ it.selected_licence=newLic; }
-    // update summary
-    let total=0; cur.forEach(b=>{
-      const basic=Number(b.price)||29.99;
-      let pr=basic; if(b.selected_licence==="pro") pr=basic*2.2; if(b.selected_licence==="exclusive") pr=Math.max(basic*10,149); if(b.selected_licence==="free") pr=0;
-      total+=pr;
-    });
-    const sumEl=document.getElementById("cartSummary");
-    if(sumEl) sumEl.querySelector(".big span:last-child").textContent=`$${total.toFixed(2)}`;
-    const check=document.getElementById("goCheck");
-    if(check) check.textContent=`Checkout • $${total.toFixed(2)}`;
-  });
-};
-
+        const mod = await import("../licence/licence.js");
+        mod.openLicencePopup(beat, beat.selected_licence||'basic', (newLic, newPrice)=>{
+          card.querySelectorAll(".c-pill").forEach(p=>p.classList.toggle("on", p.dataset.lic===newLic));
+          card.querySelector("[data-price]").textContent=`$${newPrice.toFixed(2)}`;
+          const cur=JSON.parse(localStorage.getItem("dopetone_cart")||"[]");
+          const it=cur.find(b=>String(b.id)===String(beat.id));
+          if(it){ it.selected_licence=newLic; saveCart(cur); }
+          let total=0; cur.forEach(b=>{ total+=licencePrice(b,b.selected_licence||'basic'); });
+          const sumEl=document.getElementById("cartSummary");
+          if(sumEl) sumEl.querySelector(".big span:last-child").textContent=`$${total.toFixed(2)}`;
+          const check=document.getElementById("goCheck");
+          if(check) check.textContent=`Checkout • $${total.toFixed(2)}`;
+        });
+      };
 
       list.appendChild(card);
     });
@@ -246,7 +236,6 @@ export async function initCart(){
 
   drawList();
 
-  // PLAY LISTENERS
   document.addEventListener("playerPlay", syncPlayIcons);
   document.addEventListener("playerPause", syncPlayIcons);
 }

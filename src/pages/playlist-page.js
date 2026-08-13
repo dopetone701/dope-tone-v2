@@ -1,9 +1,9 @@
 import { createDotsMenu, closeAllMenus as closeAllShared, openMenuOverlay as openOverlayShared } from "../core/menu-armburger.js";
 import { renderSimilarTracks } from "../features/similar/similar-tracks.js";
+const STATS_API="https://dopetone-stats.dopetone701.workers.dev";const trackEvent=(id,type)=>{if(!id)return;fetch(`${STATS_API}/api/stats/event`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({beatId:parseInt(id),eventType:type}),keepalive:true}).catch(()=>{})};
 
 // ============================================================
-// DOPE TONE PLAYLIST — PYRAMID VAULT V6 PRO FINAL
-// • SVG hearts lower, pro menu order, overlay, pro delete, native share
+// DOPE TONE PLAYLIST — PYRAMID VAULT V6 PRO FINAL — FIXED
 // ============================================================
 
 export function renderPlaylistPage(){
@@ -61,7 +61,6 @@ export function renderPlaylistPage(){
       </div>
     </div>
 
-    <!-- ADD TRACKS MODAL - CHECKMARK UP TO 10 -->
 <div id="addTrackModal" class="pyramid-modal">
   <div class="pyramid-modal-backdrop" id="addTrackBackdrop"></div>
   <div class="pyramid-modal-card add-card">
@@ -78,7 +77,6 @@ export function renderPlaylistPage(){
   </div>
 </div>
 
-<!-- LIKE TO ADD PRO POPUP -->
 <div id="likePopup" class="pyramid-modal">
   <div class="pyramid-modal-backdrop" id="likeBackdrop"></div>
   <div class="pyramid-modal-card like-card">
@@ -89,10 +87,8 @@ export function renderPlaylistPage(){
   </div>
 </div>
 
-
     <link rel="stylesheet" href="/src/pages/playlist-page.css" />
     <link rel="stylesheet" href="/src/features/similar/similar-tracks.css" />
-
   `;
 }
 
@@ -100,12 +96,10 @@ export async function initPlaylistPage(){
   const mount = document.getElementById("playlistMount");
   if(!mount) return;
 
-  // DETACH ALL MODALS FROM NAV - PORTAL TO BODY
 ["pyramidModal","deleteModal","shareModal","addTrackModal","likePopup"].forEach(id=>{
   const el=document.getElementById(id);
   if(el) document.body.appendChild(el);
 });
-
 
   const IMAGE_BASE = new URL("../../public/images", import.meta.url).href;
   const img = (p) => `${IMAGE_BASE}/${p}`;
@@ -116,7 +110,17 @@ export async function initPlaylistPage(){
   const HEART_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
 
   const getBeats = () => window.__BEATS__ || window.DTStore?.beats || window.store?.beats || [];
-  const getLikesIds = () => { try{return JSON.parse(localStorage.getItem(LIKES_KEY)||"[]").map(String);}catch{return[];} };
+  // FIXED - handles object {id:ts} AND array ["id"]
+  const getLikesIds = () => {
+    try{
+      const raw = localStorage.getItem(LIKES_KEY);
+      if(!raw) return [];
+      const data = JSON.parse(raw);
+      if(Array.isArray(data)) return data.map(String);
+      if(data && typeof data === 'object') return Object.keys(data).map(String);
+      return [];
+    }catch{return[];}
+  };
   const resolveBeats = (ids) => { const all=getBeats(); return ids.map(id=>all.find(b=>String(b.id)===String(id))).filter(Boolean); };
   let store = (()=>{ try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");}catch{return[];}})().map(p=>({id:String(p.id),name:p.name,beats:(p.beats||p.tracks||[]).map(String)}));
   const saveStore = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
@@ -125,7 +129,6 @@ export async function initPlaylistPage(){
 
   let activeId=null, modalMode="create", renameTargetId=null, deleteTargetId=null, shareIds=[];
 
-  // MODALS
   const pModal=document.getElementById("pyramidModal"), dModal=document.getElementById("deleteModal"), sModal=document.getElementById("shareModal");
   const pmInput=document.getElementById("pmInput"), pmError=document.getElementById("pmError"), pmTitle=document.getElementById("pmTitle"), pmSub=document.getElementById("pmSub"), pmConfirm=document.getElementById("pmConfirm"), pmLimitText=document.getElementById("pmLimitText");
   const delInput=document.getElementById("delInput"), delError=document.getElementById("delError"), delNameHint=document.getElementById("delNameHint"), delTitle=document.getElementById("delTitle"), delSub=document.getElementById("delSub");
@@ -173,6 +176,7 @@ export async function initPlaylistPage(){
 
   const openShareModal = (ids) => {
     shareIds=ids;
+    if(ids.length===1) trackEvent(ids[0],"share");
     const link=`${location.origin}/playlists?tracks=${ids.join(",")}&vault=${activeId||"shared"}`;
     shareLink.value=link; shareCount.textContent=`${ids.length} tracks • Link works on PC & mobile`;
     sModal.classList.add("open");
@@ -194,7 +198,6 @@ export async function initPlaylistPage(){
     });
   });
 
-  // BG LIKE SPOTIFY
   const setDynamicBg = (beat) => {
     const bg=document.getElementById("dynamicBg"); if(!bg||!beat) return;
     const cover=beat.cover_url||beat.cover||""; bg.style.backgroundImage=`url('${cover}')`; bg.style.opacity="1";
@@ -260,25 +263,20 @@ if(act==="add"){ openAddTrackModal(id); }
     row.dataset.bid=String(b.id);
     row.innerHTML=`<img src="${b.cover_url||b.cover||''}" loading="lazy"/><div class="yt-meta"><div class="yt-title">"${b.title||"Untitled"}" • BPM ${b.bpm||"--"}</div><div class="yt-artist">${b.genre||""} • DOPE TONE</div></div>`;
 
-   
-
-
-
-
-    // SAME MENU AS ARSENAL - FROM menu-armburger.js
     const dots = createDotsMenu(b, {
-      goto: (beat)=>{ const idx=beats.findIndex(x=>String(x.id)===String(beat.id)); window.__CURRENT_BEAT__=beat; setDynamicBg(beat); if(window.globalPlayer?.play) window.globalPlayer.play(idx,beats,"playlist"); window.location.hash=`#/beat?id=${beat.id}`; },
+      goto: (beat)=>{ const idx=beats.findIndex(x=>String(x.id)===String(beat.id)); window.__CURRENT_BEAT__=beat; setDynamicBg(beat); if(window.globalPlayer?.play) window.globalPlayer.play(idx,beats,"playlist"); window.location.hash=`#/beat?id=${beat.id}`; trackEvent(beat.id,"play"); },
       playlist: ()=> openAddTrackModal(id),
       like: (beat)=>{
         let likes=getLikesIds(); const bid=String(beat.id);
-        if(likes.includes(bid)){ likes=likes.filter(x=>x!==bid); } else { likes=[...likes,bid]; }
+        const had = likes.includes(bid);
+        if(had){ likes=likes.filter(x=>x!==bid); } else { likes=[...likes,bid]; trackEvent(beat.id,"like"); }
         localStorage.setItem(LIKES_KEY, JSON.stringify(likes));
         if(activeId==="liked") openPlaylist("liked");
       },
-      share: (beat)=> openShareModal([beat.id]),
-      download: (beat)=>{ /* your download */ },
-      cart: (beat)=>{ /* your cart */ },
-      buy: (beat)=>{ /* your buy */ }
+      share: (beat)=>{ openShareModal([beat.id]); },
+      download: (beat)=>{ trackEvent(beat.id,"download"); },
+      cart: (beat)=>{ trackEvent(beat.id,"cart"); },
+      buy: (beat)=>{ trackEvent(beat.id,"cart"); }
     });
     row.appendChild(dots);
 
@@ -286,17 +284,14 @@ if(act==="add"){ openAddTrackModal(id); }
       if(e.target.closest(".dt-dots-wrap")) return;
       const beat=getBeatById(row.dataset.bid); if(!beat) return;
       window.__CURRENT_BEAT__=beat; setDynamicBg(beat);
-      if(window.globalPlayer?.play){ const idx=beats.findIndex(x=>String(x.id)===String(beat.id)); window.globalPlayer.play(idx,beats,"playlist"); }
+      if(window.globalPlayer?.play){ const idx=beats.findIndex(x=>String(x.id)===String(beat.id)); trackEvent(beat.id,"play"); window.globalPlayer.play(idx,beats,"playlist"); }
     });
 
     grid.appendChild(row);
   });
 
-  document.getElementById("playAll")?.addEventListener("click", ()=>{ if(beats[0]){ window.__CURRENT_BEAT__=beats[0]; setDynamicBg(beats[0]); window.globalPlayer?.play(0,beats,"playlist"); } });
+  document.getElementById("playAll")?.addEventListener("click", ()=>{ if(beats[0]){ window.__CURRENT_BEAT__=beats[0]; setDynamicBg(beats[0]); trackEvent(beats[0].id,"play"); window.globalPlayer?.play(0,beats,"playlist"); } });
 
-
-  
-// at bottom of openPlaylist()
 const old = document.getElementById("similarMount");
 if(old) old.remove();
 const box = document.createElement("div");
@@ -305,9 +300,6 @@ list.appendChild(box);
 renderSimilarTracks(beats, "similarMount");
 
 };
-
-
-
 
   const renderPyramids = () => {
     const likedIds=getLikesIds(); const hasLiked=likedIds.length>0; const showPlus=store.length<LIMIT;
@@ -359,15 +351,14 @@ renderSimilarTracks(beats, "similarMount");
     document.getElementById("menuOverlay")?.addEventListener("click", closeAllMenus);
     mount.querySelectorAll(".pyramid-card").forEach(card=>{
       const id=card.dataset.id;
-card.querySelector(".pyramid-dots")?.addEventListener("click", (e)=>{ 
-  e.stopPropagation(); 
-  const menu=card.querySelector(".pyramid-menu"); 
-  const was=menu.classList.contains("active"); 
-  closeAllMenus(); 
-  if(!was){ 
-    menu.classList.add("active"); 
+card.querySelector(".pyramid-dots")?.addEventListener("click", (e)=>{
+  e.stopPropagation();
+  const menu=card.querySelector(".pyramid-menu");
+  const was=menu.classList.contains("active");
+  closeAllMenus();
+  if(!was){
+    menu.classList.add("active");
     openMenuOverlay();
-    // AUTO-FLIP LOGIC - fixes your screenshot overflow
     requestAnimationFrame(()=>{
       const r = menu.getBoundingClientRect();
       if(r.right > window.innerWidth - 12){
@@ -380,20 +371,18 @@ card.querySelector(".pyramid-dots")?.addEventListener("click", (e)=>{
         menu.style.right = "auto";
         menu.style.transform = "translateX(0)";
       }
-      // if first pyramid (LIKED) - force left align so it doesn't go off left
       if(card.dataset.id==="liked"){
         menu.style.left = "0";
         menu.style.right = "auto";
       }
     });
-  } 
+  }
 });
       card.querySelectorAll(".pyramid-menu button[data-act]").forEach(btn=>{ btn.addEventListener("click", (e)=>{ e.stopPropagation(); closeAllMenus(); handleMenuAct(btn.dataset.act,id); }); });
     });
     if(activeId) openPlaylist(activeId); else if(hasLiked) openPlaylist("liked"); else if(store[0]) openPlaylist(store[0].id);
   };
 
-   // ===== ADD TRACKS MODAL LOGIC =====
   const addModal = document.getElementById("addTrackModal");
   const addList = document.getElementById("addList");
   const addSearch = document.getElementById("addSearch");
@@ -445,7 +434,7 @@ card.querySelector(".pyramid-dots")?.addEventListener("click", (e)=>{
 
     addList.querySelectorAll(".add-row").forEach(row=>{
       row.addEventListener("click", (e)=>{
-        if(e.target.closest(".add-play-btn")) return; // don't select when playing
+        if(e.target.closest(".add-play-btn")) return;
         const id=String(row.dataset.bid);
         if(selectedIds.has(id)) selectedIds.delete(id);
         else{
@@ -459,7 +448,6 @@ card.querySelector(".pyramid-dots")?.addEventListener("click", (e)=>{
       });
     });
 
-       // PLAY IN MODAL - PYRAMID COVER INSTANT UPDATE
     addList.querySelectorAll(".add-play-btn").forEach(btn=>{
       btn.addEventListener("click", (e)=>{
         e.stopPropagation();
@@ -467,8 +455,6 @@ card.querySelector(".pyramid-dots")?.addEventListener("click", (e)=>{
         const beat=getBeatById(id);
         if(!beat) return;
         const cover = beat.cover_url || beat.cover || '';
-
-        // 1. UPDATE PYRAMID TRIANGLE COVER INSTANTLY
         const pyramidImg = document.querySelector(`.pyramid-card[data-id="${addTargetId}"] .pyramid-shape img`);
         if(pyramidImg){
           pyramidImg.style.transition = "none";
@@ -476,8 +462,6 @@ card.querySelector(".pyramid-dots")?.addEventListener("click", (e)=>{
           pyramidImg.style.transform = "scale(1.08)";
           setTimeout(()=> pyramidImg.style.transform = "scale(1)", 160);
         }
-
-        // 2. UPDATE BIG BLUR BG TOO
         const bg = document.getElementById("dynamicBg");
         if(bg){
           bg.style.transition = "none";
@@ -487,21 +471,18 @@ card.querySelector(".pyramid-dots")?.addEventListener("click", (e)=>{
           bg.style.transition = "opacity .35s ease";
         }
         window.__CURRENT_BEAT__ = beat;
-
         addList.querySelectorAll(".add-play-btn").forEach(b=>b.textContent="▶");
         btn.textContent="❚❚";
-
         if(window.globalPlayer?.play){
           const idx=pool.findIndex(x=>String(x.id)===String(id));
+          trackEvent(beat.id,"play");
           window.globalPlayer.play(idx, pool, "add-modal");
         }
       });
     });
 
-
     addCount.textContent=`${selectedIds.size} / 10 selected`;
   }
-
 
   document.getElementById("addConfirm")?.addEventListener("click", ()=>{
     if(!selectedIds.size) return;
@@ -511,6 +492,7 @@ card.querySelector(".pyramid-dots")?.addEventListener("click", (e)=>{
       const merged = [...new Set([...current, ...ids])];
       localStorage.setItem(LIKES_KEY, JSON.stringify(merged));
       window.dispatchEvent(new CustomEvent("dt:beatLiked"));
+      ids.forEach(id=> trackEvent(id,"like"));
     }else{
       const p = store.find(x=>x.id===addTargetId);
       if(p){ p.beats = [...new Set([...p.beats, ...ids])]; saveStore(); }
@@ -519,9 +501,7 @@ card.querySelector(".pyramid-dots")?.addEventListener("click", (e)=>{
     openPlaylist(addTargetId);
   });
 
-  // expose for menu handler
   window.openAddTrackModal = openAddTrackModal;
-
 
   renderPyramids();
 }

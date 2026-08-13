@@ -1,4 +1,4 @@
-// latest.v2.js - HASH ONLY FIXED + GO TO BEAT INJECTED
+// src/features/latest/latest.v2.js - HASH + D1 FIXED
 import { store } from '../../core/store.js';
 
 const MAX = 10;
@@ -6,13 +6,15 @@ let isDragging = false;
 const PLAY = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>`;
 const PAUSE = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
 
-// INJECTED - GO TO BEAT HASH ONLY
+const STATS_API="https://dopetone-stats.dopetone701.workers.dev";
+const trackEvent=(id,type)=>{if(!id)return;fetch(`${STATS_API}/api/stats/event`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({beatId:parseInt(id),eventType:type}),keepalive:true}).catch(()=>{})};
+
 function goToBeat(beat){
   if(!beat?.id) return;
-  location.hash = `beat?id=${encodeURIComponent(beat.id)}`;
+  location.hash = `#/beat?id=${encodeURIComponent(beat.id)}`;
 }
 function goToBeatsList(){
-  location.hash = `beats`;
+  location.hash = `#/beats`;
 }
 window.goToBeat = goToBeat;
 
@@ -81,12 +83,12 @@ export async function renderLatest(){
       localStorage.setItem('dt_list_v2','latest');
       localStorage.setItem('dt_index_v2', String(i));
       localStorage.setItem('dt_queue_v2', JSON.stringify(latest));
+      trackEvent(beat.id,"play");
       if(window.DTPlayer?.setQueue){ window.DTPlayer.setQueue(latest, i, true); }
       else if(window.DTPlayTrack){ window.DTPlayTrack(beat, true); }
       document.dispatchEvent(new CustomEvent('dt:listSwitch', {detail:{listId:'latest'}}));
     };
 
-    // INJECTED - TITLE + DOUBLE CLICK = GO TO BEAT
     const titleEl = card.querySelector(".rp-title");
     if(titleEl){
       titleEl.style.cursor="pointer";
@@ -96,13 +98,10 @@ export async function renderLatest(){
       if(e.target.closest('.rp-playbtn')) return;
       e.preventDefault(); if(!isDragging) goToBeat(beat);
     });
-    // Single click on cover (not play btn) = go to beat if not playing? Keep play on play btn only
     card.querySelector(".rp-cover").addEventListener('click', e=>{
       if(e.target.closest('.rp-playbtn')) return;
       if(isDragging) return;
-      // Let play btn handle play, cover click = go to beat
-      // Uncomment next line if you want cover click to go to beat:
-      // goToBeat(beat);
+      goToBeat(beat);
     });
 
     scroller.appendChild(card);
