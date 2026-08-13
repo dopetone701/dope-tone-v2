@@ -1,4 +1,4 @@
-// CC V9.2 - PURE SVG ICONS - X = CLOSE DASH, QUEUE COMES IN
+// CC V9.4 FINAL - PURE SVG ICONS - X = CLOSE DASH, QUEUE COMES IN - FIXED CANVAS NOT FOUND + BEATS TABLE SAFE INJECT
 export async function mountCC(fullPath, viewEl){
   const route = (fullPath.replace('#/cc/','').replace('/cc/','').replace('/cc','').replace(/^\//,'') || 'overview').split('?')[0];
   const rightEl = document.getElementById('right-sidebar');
@@ -51,39 +51,86 @@ export async function mountCC(fullPath, viewEl){
       <div style="height:1px;background:var(--border);margin:10px 8px"></div>
       <div style="font-size:9px;letter-spacing:1.4px;color:var(--muted);font-weight:700;padding:6px 12px">SYSTEM</div>
       <button data-cc="settings" class="cc-item ${route==='settings'?'active':''}">
-        <span style="width:20px;height:20px;display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-     stroke="currentColor" stroke-width="1.8"
-     stroke-linecap="round" stroke-linejoin="round"
-     aria-hidden="true">
-  <circle cx="12" cy="12" r="3"></circle>
-  <path d="M19.43 15.34a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21.5a2 2 0 1 1-4 0v-.23a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.88 1.7 1.7 0 0 0-1.56-1.03H2.5a2 2 0 1 1 0-4h.23a1.7 1.7 0 0 0 1.56-1.03 1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.88.34h.01a1.7 1.7 0 0 0 1.02-1.56V2.5a2 2 0 1 1 4 0v.23a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.88v.01a1.7 1.7 0 0 0 1.56 1.02h.23a2 2 0 1 1 0 4h-.23a1.7 1.7 0 0 0-1.56 1.03z"></path>
-</svg>
-</span>
+        <span style="width:20px;height:20px;display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.43 15.34a1.7 1.7 0 0 0.34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 0 0 0-1.88-.34 1.7 0 0 0-1.03 1.56V21.5a2 2 0 1 1-4 0v-.23a1.7 1.7 0 0 0-1.03-1.56 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0.34-1.88 1.7 0 0 0-1.56-1.03H2.5a2 2 0 1 1 0-4h.23a1.7 0 0 0 1.56-1.03 1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.88.34h.01a1.7 1.7 0 0 0 1.02-1.56V2.5a2 2 0 1 1 4 0v.23a1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.88v.01a1.7 1.7 0 0 0 1.56 1.02h.23a2 2 0 1 1 0 4h-.23a1.7 1.7 0 0 0-1.56 1.03z"></path></svg></span>
         Settings
       </button>
     </nav>
     <style>
- .cc-item{ width:100%; display:flex; gap:12px; align-items:center; padding:11px 14px; border-radius:12px; border:1px solid transparent; background:transparent; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer; text-align:left; }
- .cc-item:hover{ background:rgba(255,255,255,.06); color:var(--white); }
- .cc-item.active{ background:rgba(255,255,255,.08); color:var(--white); border-color:var(--border); }
- .cc-item.active svg{ stroke:var(--white); }
+    .cc-item{ width:100%; display:flex; gap:12px; align-items:center; padding:11px 14px; border-radius:12px; border:1px solid transparent; background:transparent; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer; text-align:left; }
+    .cc-item:hover{ background:rgba(255,255,255,.06); color:var(--white); }
+    .cc-item.active{ background:rgba(255,255,255,.08); color:var(--white); border-color:var(--border); }
+    .cc-item.active svg{ stroke:var(--white); }
     </style>
   `;
 
   viewEl.innerHTML = `<div id="cc-main-page" style="min-height:80vh; padding:24px;"></div>`;
   rightEl.querySelectorAll('[data-cc]').forEach(btn=> btn.onclick = () => location.hash = `#/cc/${btn.dataset.cc}`);
-
-  rightEl.querySelector('#ccCloseRight').onclick = () => {
-    closeCCDashToQueue();
-  };
+  rightEl.querySelector('#ccCloseRight').onclick = () => closeCCDashToQueue();
 
   try{
     const pageEl = viewEl.querySelector('#cc-main-page');
-    const mod = await import(`./pages/${route}.js`).catch(()=>null);
-    if(mod?.mount) await mod.mount(pageEl);
-    else if(mod?.default) await mod.default(pageEl);
-    else pageEl.innerHTML = `<h2 style="color:#fff">${route.toUpperCase()}</h2>`;
-  }catch{}
+    if(route==='overview'){
+      // GRAPH SHELL - UNTOUCHED
+      pageEl.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:12px">
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px"><div style="font-size:9px;color:#6B7280;letter-spacing:.8px">TOTAL PLAYS</div><div id="totalPlays" style="font-size:18px;font-weight:800;color:#fff;margin-top:6px">0</div></div>
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px"><div style="font-size:9px;color:#6B7280">DOWNLOADS</div><div id="totalDownloads" style="font-size:18px;font-weight:800;color:#fff;margin-top:6px">0</div></div>
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px"><div style="font-size:9px;color:#6B7280">CART</div><div id="cartItems" style="font-size:18px;font-weight:800;color:#fff;margin-top:6px">0</div></div>
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px"><div style="font-size:9px;color:#6B7280">LIKES</div><div id="totalLikes" style="font-size:18px;font-weight:800;color:#fff;margin-top:6px">0</div></div>
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px"><div style="font-size:9px;color:#6B7280">ORDERS</div><div id="totalOrders" style="font-size:18px;font-weight:800;color:#fff;margin-top:6px">0</div></div>
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px"><div style="font-size:9px;color:#6B7280">REVENUE</div><div id="totalRevenue" style="font-size:18px;font-weight:800;color:#fff;margin-top:6px">$0</div></div>
+        </div>
+        <div style="background:#050A14;border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden">
+          <canvas id="tradeChart" style="width:100%;height:380px;display:block"></canvas>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(255,255,255,.06)">
+            <div style="background:#050A14;padding:8px 0"><div style="font-size:9px;color:#6B7280;padding:0 12px 6px;letter-spacing:.8px">MOMENTUM</div><canvas id="momentumChart" style="width:100%;height:90px;display:block"></canvas></div>
+            <div style="background:#050A14;padding:8px 0"><div style="font-size:9px;color:#6B7280;padding:0 12px 6px;letter-spacing:.8px">CONVERSION</div><canvas id="conversionChart" style="width:100%;height:90px;display:block"></canvas></div>
+          </div>
+        </div>
+        <div id="cc-ranking-wrap" style="margin-top:16px"></div>
+      `;
+      await new Promise(r=>setTimeout(r, 80));
+      const mod = await import('./cc-overview/cc-graphs.js');
+      if(mod.initCharts) await mod.initCharts();
+      const rankingMod = await import('./cc-overview/cc-top-ranking.js').catch(()=>null);
+      if(rankingMod?.mount){
+        const rankingEl = pageEl.querySelector('#cc-ranking-wrap');
+        await rankingMod.mount(rankingEl);
+      }
+    } else if(route==='beats'){
+      // BEATS PAGE - SAFE INJECT - SAME LOGIC AS YOUR FILE, BUT STICKY + LAZY + SVG
+      try{
+        const beatsMod = await import('./beats/cc-beats-table.js');
+        if(beatsMod.mount) await beatsMod.mount(pageEl);
+        else if(beatsMod.initBeatsTable){
+          pageEl.innerHTML = `<div id="beatsHeaderInject"></div><div id="beatsScrollWrap" style="height:calc(100vh - 180px);overflow:auto"><table style="width:100%"><tbody id="beatsTableBody"></tbody></table></div>`;
+          await beatsMod.initBeatsTable();
+        }
+      }catch(err){
+        console.error('[CC Beats]', err);
+        // FALLBACK - TRY OVERVIEW PATH
+        try{
+          const fallback = await import('./cc-overview/cc-beats-table.js');
+          if(fallback.mount) await fallback.mount(pageEl);
+          else if(fallback.initBeatsTable){
+            pageEl.innerHTML = `<div id="beatsHeaderInject"></div><table><tbody id="beatsTableBody"></tbody></table>`;
+            await fallback.initBeatsTable();
+          }
+        }catch(e2){
+          pageEl.innerHTML = `<div style="color:#ff5555;padding:20px">Beats table not found: ${err.message}<br>Need: controlCenter/beats/cc-beats-table.js</div>`;
+        }
+      }
+      // Load modals if exist
+      import('./beats/cc-create-modal.js').then(m=>m.init&&m.init()).catch(()=>{});
+      import('./beats/cc-edit-modal.js').then(m=>m.init&&m.init()).catch(()=>{});
+    } else {
+      // OTHER PAGES - UNTOUCHED
+      const mod = await import(`./pages/${route}.js`).catch(()=>null);
+      if(mod?.mount) await mod.mount(pageEl);
+      else if(mod?.default) await mod.default(pageEl);
+      else pageEl.innerHTML = `<h2 style="color:#fff">${route.toUpperCase()}</h2>`;
+    }
+  }catch(e){ console.error('[CC Router]', e); }
 
   localStorage.setItem('dt_cc_open','true');
   window.__ccMiddleOpen = true;
@@ -110,9 +157,7 @@ function closeCCDashToQueue(){
         back.id='backToCCBtn';
         back.innerHTML = `<span style="display:inline-grid;place-items:center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span> Back to CC Dash`;
         back.style.cssText = 'margin:10px; width:calc(100% - 20px); padding:10px; border-radius:10px; border:1px solid #FF1E3C; background:#FF1E3C; color:#fff; cursor:pointer; font-weight:800; font-size:11px; letter-spacing:.5px; display:flex; align-items:center; justify-content:center; gap:6px;';
-        back.onclick = () => {
-          location.hash = location.hash.startsWith('#/cc/')? location.hash : '#/cc/overview';
-        };
+        back.onclick = () => { location.hash = location.hash.startsWith('#/cc/')? location.hash : '#/cc/overview'; };
         rightEl.prepend(back);
       }
       rightEl.style.transform = 'translateX(0)';

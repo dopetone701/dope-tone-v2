@@ -21,6 +21,8 @@
 @import url('../features/licence/licence.css');
 @import url('../features/cart/cart.css');
 @import url('../features/auth/auth.css');
+@import url('../features/controlCenter/cc-overview/cc-graphs.css');
+@import url('../features/controlCenter/cc-overview/cc-top-ranking.css');
 
 
 
