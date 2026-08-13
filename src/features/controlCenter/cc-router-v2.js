@@ -1,4 +1,5 @@
 // CC V9.4 FINAL - PURE SVG ICONS - X = CLOSE DASH, QUEUE COMES IN - FIXED CANVAS NOT FOUND + BEATS TABLE SAFE INJECT
+// + AUDIENCES INJECT (audience-page.js -> cc-emails + vault-emails logic 100%)
 export async function mountCC(fullPath, viewEl){
   const route = (fullPath.replace('#/cc/','').replace('/cc/','').replace('/cc','').replace(/^\//,'') || 'overview').split('?')[0];
   const rightEl = document.getElementById('right-sidebar');
@@ -56,10 +57,10 @@ export async function mountCC(fullPath, viewEl){
       </button>
     </nav>
     <style>
-    .cc-item{ width:100%; display:flex; gap:12px; align-items:center; padding:11px 14px; border-radius:12px; border:1px solid transparent; background:transparent; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer; text-align:left; }
-    .cc-item:hover{ background:rgba(255,255,255,.06); color:var(--white); }
-    .cc-item.active{ background:rgba(255,255,255,.08); color:var(--white); border-color:var(--border); }
-    .cc-item.active svg{ stroke:var(--white); }
+   .cc-item{ width:100%; display:flex; gap:12px; align-items:center; padding:11px 14px; border-radius:12px; border:1px solid transparent; background:transparent; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer; text-align:left; }
+   .cc-item:hover{ background:rgba(255,255,255,.06); color:var(--white); }
+   .cc-item.active{ background:rgba(255,255,255,.08); color:var(--white); border-color:var(--border); }
+   .cc-item.active svg{ stroke:var(--white); }
     </style>
   `;
 
@@ -70,7 +71,6 @@ export async function mountCC(fullPath, viewEl){
   try{
     const pageEl = viewEl.querySelector('#cc-main-page');
     if(route==='overview'){
-      // GRAPH SHELL - UNTOUCHED
       pageEl.innerHTML = `
         <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:12px">
           <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px"><div style="font-size:9px;color:#6B7280;letter-spacing:.8px">TOTAL PLAYS</div><div id="totalPlays" style="font-size:18px;font-weight:800;color:#fff;margin-top:6px">0</div></div>
@@ -98,7 +98,6 @@ export async function mountCC(fullPath, viewEl){
         await rankingMod.mount(rankingEl);
       }
     } else if(route==='beats'){
-      // BEATS PAGE - SAFE INJECT - SAME LOGIC AS YOUR FILE, BUT STICKY + LAZY + SVG
       try{
         const beatsMod = await import('./beats/cc-beats-table.js');
         if(beatsMod.mount) await beatsMod.mount(pageEl);
@@ -108,7 +107,6 @@ export async function mountCC(fullPath, viewEl){
         }
       }catch(err){
         console.error('[CC Beats]', err);
-        // FALLBACK - TRY OVERVIEW PATH
         try{
           const fallback = await import('./cc-overview/cc-beats-table.js');
           if(fallback.mount) await fallback.mount(pageEl);
@@ -120,11 +118,18 @@ export async function mountCC(fullPath, viewEl){
           pageEl.innerHTML = `<div style="color:#ff5555;padding:20px">Beats table not found: ${err.message}<br>Need: controlCenter/beats/cc-beats-table.js</div>`;
         }
       }
-      // Load modals if exist
       import('./beats/cc-create-modal.js').then(m=>m.init&&m.init()).catch(()=>{});
       import('./beats/cc-edit-modal.js').then(m=>m.init&&m.init()).catch(()=>{});
+    } else if(route==='audiences'){
+      // ==== AUDIENCES INJECT - YOUR LOGIC 100% ====
+      try{
+        const { renderAudiencePage } = await import('./beats/audience/audience-page.js');
+        await renderAudiencePage(pageEl);
+      }catch(err){
+        console.error('[CC Audiences]', err);
+        pageEl.innerHTML = `<div style="color:#ff5555;padding:20px">Audiences failed: ${err.message}<br>Check beats/audience/ files exist</div>`;
+      }
     } else {
-      // OTHER PAGES - UNTOUCHED
       const mod = await import(`./pages/${route}.js`).catch(()=>null);
       if(mod?.mount) await mod.mount(pageEl);
       else if(mod?.default) await mod.default(pageEl);
