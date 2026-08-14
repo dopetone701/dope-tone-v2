@@ -12,32 +12,37 @@ const SINGLE_LIMIT = 90*1024*1024;
 
 class FixedUploader {
   constructor(apiBase){this.api=apiBase.replace(/\/$/,'');this.worker=WORKER_URL;this.chunkSize=5*1024*1024;}
-  async uploadSmall(file,folder,progWrap){
-    const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-    const key=`${folder}/${Date.now()}_${safe}`;
+   async uploadSmall(file,folder,progWrap){
+    // KEEP SAME ID - stable
+    const beatId = window.editingBeat?.id || editingBeat?.id || Date.now();
+    const ext = file.name.split('.').pop() || 'mp3';
+    const key = folder==='covers' ? `${folder}/${beatId}.${ext}` : `${folder}/${beatId}.${ext}`;
     try{
       if(progWrap){progWrap.style.display='block';}
       const res=await fetch(`${this.worker}/upload-single?key=${encodeURIComponent(key)}`,{method:'PUT',headers:{'Content-Type':file.type||'application/octet-stream'},body:file});
       const data=await res.json();
       if(res.ok && data.url){
-        if(progWrap){const fill=progWrap.querySelector('.prog-fill');const text=progWrap.querySelector('.prog-text');if(fill)fill.style.width='100%';if(text)text.textContent=`Done ✓ Standard ${(data.size/1024/1024).toFixed(2)}MB`;}
+        if(progWrap){const fill=progWrap.querySelector('.prog-fill');const text=progWrap.querySelector('.prog-text');if(fill)fill.style.width='100%';if(text)text.textContent=`Done ✓`;}
         return {url: data.cdnUrl||data.url, key};
       }
     }catch(e){ console.warn('worker single failed',e); }
-    const form=new FormData();form.append('file',file);form.append('folder',folder);
+    const form=new FormData();form.append('file',file);form.append('folder',folder);form.append('key',key);
     return new Promise((resolve,reject)=>{
       const xhr=new XMLHttpRequest();xhr.open('POST',`${this.api}/upload`,true);
       if(progWrap){const fill=progWrap.querySelector('.prog-fill');const text=progWrap.querySelector('.prog-text');xhr.upload.onprogress=(e)=>{if(e.lengthComputable){const pct=Math.round((e.loaded/e.total)*100);if(fill)fill.style.width=pct+'%';if(text)text.textContent=`${pct}%`;}};}
-      xhr.onload=()=>{try{const d=JSON.parse(xhr.responseText);if(xhr.status>=200&&xhr.status<300&&d.cdnUrl)resolve({url:d.cdnUrl, key:d.key});else reject(new Error(d.error||`Upload ${xhr.status}`));}catch{reject(new Error(`Upload ${xhr.status}`));}};
+      xhr.onload=()=>{try{const d=JSON.parse(xhr.responseText);if(xhr.status>=200&&xhr.status<300&&d.cdnUrl)resolve({url:d.cdnUrl, key:d.key||key});else reject(new Error(d.error||`Upload ${xhr.status}`));}catch{reject(new Error(`Upload ${xhr.status}`));}};
       xhr.onerror=()=>reject(new Error('Network'));
       xhr.send(form);
     });
   }
-  async initMultipart(filename,folder){
-    const key=`${folder}/${Date.now()}_${filename.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
-    const res=await fetch(`${this.api}/multipart/init`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename,folder})});
+
+   async initMultipart(filename,folder){
+    const beatId = window.editingBeat?.id || editingBeat?.id || Date.now();
+    const key=`${folder}/${beatId}.${filename.split('.').pop()}`;
+    const res=await fetch(`${this.api}/multipart/init`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename,folder,key})});
     const txt=await res.text();if(!res.ok)throw new Error(`Init ${res.status}`);const data=JSON.parse(txt);return {key:data.key||key, uploadId:data.uploadId||data.upload_id};
   }
+
   async uploadPartSequential(key,uploadId,partNumber,chunk,onProg){
     return new Promise((resolve,reject)=>{
       const xhr=new XMLHttpRequest();

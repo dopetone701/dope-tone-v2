@@ -23,7 +23,8 @@ class ProUploader {
 
   async uploadSimple(file, folder, progWrapOrBtn, label){
     const safe = file.name.replace(/[^a-zA-Z0-9.-]/g,'_');
-    const key = `${folder}/${Date.now()}-${safe}`;
+const titleSlug = (document.getElementById('title')?.value || file.name).replace(/[^a-zA-Z0-9]/g,'_').slice(0,30);
+const key = `${folder}/${titleSlug}${folder==='covers'?'':'.mp3'}`.replace('.mp3.mp3','.mp3');
     let progWrap = null, btn = null;
     if(progWrapOrBtn){
       if(progWrapOrBtn.querySelector && progWrapOrBtn.querySelector('.prog-fill')) progWrap = progWrapOrBtn;
@@ -62,7 +63,8 @@ class ProUploader {
   }
 
   async initMultipart(filename, folder){
-    const key = `${folder}/${Date.now()}-${filename.replace(/[^a-zA-Z0-9.-]/g,'_')}`;
+const titleSlug = (document.getElementById('title')?.value || file.name).replace(/[^a-zA-Z0-9]/g,'_').slice(0,30);
+const key = `${folder}/${titleSlug}${folder==='covers'?'':'.mp3'}`.replace('.mp3.mp3','.mp3');
     try{
       const res = await fetch(`${this.worker}/create-multipart`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key, contentType:'application/octet-stream'}) });
       const data = await res.json();

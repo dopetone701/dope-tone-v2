@@ -42,7 +42,6 @@ export function openLicencePopup(beat, selected="basic", onSelect=null){
     </div>`;
   document.body.appendChild(wrap.firstElementChild);
   const overlay=document.getElementById("licOverlay"), modal=document.getElementById("licModal"), body=document.getElementById("licBody");
-
   const isCartContext = typeof onSelect === 'function';
 
   function addToCartAndStay(lic){
@@ -52,24 +51,42 @@ export function openLicencePopup(beat, selected="basic", onSelect=null){
     if(idx>=0){ cart[idx].selected_licence=lic; cart[idx].price=p; cart[idx].licence=lic; }
     else { cart.push({...beat, selected_licence:lic, licence:lic, price:p, added_at:Date.now()}); trackEvent(beat.id,"cart"); }
     localStorage.setItem("dopetone_cart",JSON.stringify(cart));
+    // also set dopetone_licences for checkout-paypal-v2
+    let licencesStore={}; try{ licencesStore=JSON.parse(localStorage.getItem("dopetone_licences")||"{}"); }catch{}
+    licencesStore[beat.id]={name:lic.toUpperCase(), price:p};
+    licencesStore[String(beat.id)]={name:lic.toUpperCase(), price:p};
+    localStorage.setItem("dopetone_licences", JSON.stringify(licencesStore));
     window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:cart.length}}));
     if(onSelect) onSelect(lic,p);
     return p;
   }
 
-  function addToCartAndCheckout(lic){
+  // NEW: instant PayPal modal, no cart page
+  function checkoutNow(lic){
     const p=addToCartAndStay(lic);
     overlay.remove();
-    location.hash=`#/cart`;
+    // open paypal modal instantly
+    setTimeout(()=>{
+      if(window.DT_openCartPaypalModal){
+        window.DT_openCartPaypalModal();
+      } else if(window.createPaypalCheckout){
+        window.createPaypalCheckout();
+      } else {
+        // fallback go to cart and auto-open
+        location.hash='#/cart';
+        setTimeout(()=> window.DT_openCartPaypalModal?.() || document.getElementById('goCheck')?.click(), 800);
+      }
+    }, 150);
   }
 
   function render(){
     const l = licences.find(x=>x.id===current);
-    
+   
     if(!viewAll){
       modal.classList.remove("wide");
       document.getElementById("licTitle").textContent=`Choose Licence - ${beat.title||'My Own'}`;
-      const btnLabel = isCartContext ? `Use ${l.name} • ${l.price===0?'FREE':'$'+l.price.toFixed(2)}` : `Add to Cart • ${l.price===0?'FREE':'$'+l.price.toFixed(2)}`;
+      // CHANGED: Add to Cart -> Checkout
+      const btnLabel = isCartContext ? `Use ${l.name} • ${l.price===0?'FREE':'$'+l.price.toFixed(2)}` : `Checkout • ${l.price===0?'FREE':'$'+l.price.toFixed(2)}`;
       body.innerHTML=`
         <div class="lic-single">
           <div class="lic-card active">
@@ -90,20 +107,18 @@ export function openLicencePopup(beat, selected="basic", onSelect=null){
       document.getElementById("viewAllBtn").onclick=()=>{ viewAll=true; render(); };
       document.getElementById("useBtn").onclick=()=>{
         if(isCartContext){ addToCartAndStay(current); overlay.remove(); }
-        else { addToCartAndCheckout(current); }
+        else { checkoutNow(current); } // INSTANT CHECKOUT
       };
     } else {
       modal.classList.add("wide");
       document.getElementById("licTitle").textContent=`Choose Licence - ${beat.title||'My Own'}`;
-      
-      // GRID CARDS - all buttons become Add to Cart outside cart
+     
       body.innerHTML=`
         <div class="lic-grid">
           ${licences.map(x=>{
             const isSel = x.id===current;
-            const label = isCartContext 
-              ? (isSel ? 'Selected' : `Select ${x.name}`)
-              : `Add to Cart • ${x.price===0?'FREE':'$'+x.price.toFixed(2)}`;
+            // CHANGED: Add to Cart -> Select
+            const label = isSel ? 'Selected ✓' : `Select ${x.name}`;
             return `
             <div class="lic-card ${isSel?'active':''}" data-lic="${x.id}">
               <div class="lic-badge">${x.badge}</div>
@@ -114,35 +129,26 @@ export function openLicencePopup(beat, selected="basic", onSelect=null){
             </div>`}).join('')}
         </div>
         <div class="lic-foot">
-          ${isCartContext 
-            ? `<button class="lic-btn ghost" id="backSingle">← Back to ${current.toUpperCase()}</button>
-               <button class="lic-btn red" id="confirmAll">Continue • $${priceFor(beat,current).toFixed(2)}</button>`
-            : `<button class="lic-btn ghost" id="backSingle">Add to Cart • $${priceFor(beat,current).toFixed(2)}</button>
-               <button class="lic-btn red" id="confirmAll">Checkout • $${priceFor(beat,current).toFixed(2)}</button>`
-          }
+          <button class="lic-btn ghost" id="backSingle">← Back</button>
+          <button class="lic-btn red" id="confirmAll">Checkout • $${priceFor(beat,current).toFixed(2)}</button>
         </div>`;
 
       body.querySelectorAll("[data-lic]").forEach(c=>{
         c.onclick=()=>{ current=c.dataset.lic; render(); };
       });
-      // quick add buttons inside cards (outside cart = instant add)
       body.querySelectorAll("[data-add]").forEach(b=>{
         b.onclick=(e)=>{
           e.stopPropagation();
           const lic=b.dataset.add;
           current=lic;
-          if(isCartContext){ render(); }
-          else { addToCartAndCheckout(lic); }
+          render(); // only select, don't add to cart yet
         };
       });
 
-      document.getElementById("backSingle").onclick=()=>{
-        if(isCartContext){ viewAll=false; render(); }
-        else { addToCartAndStay(current); overlay.remove(); const t=document.createElement('div'); t.textContent=`Added ${current.toUpperCase()} to cart`; t.style.cssText=`position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:10px 16px;border-radius:99px;font-weight:700;font-size:13px;z-index:999999`; document.body.appendChild(t); setTimeout(()=>t.remove(),2000); }
-      };
+      document.getElementById("backSingle").onclick=()=>{ viewAll=false; render(); };
       document.getElementById("confirmAll").onclick=()=>{
         if(isCartContext){ addToCartAndStay(current); overlay.remove(); }
-        else { addToCartAndCheckout(current); }
+        else { checkoutNow(current); } // INSTANT PAYPAL
       };
     }
   }

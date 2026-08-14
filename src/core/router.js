@@ -1,24 +1,17 @@
-// ===============================
-// 🔥 DOPE TONE V2 - ROUTER V8 FINAL - CC RIGHT DASH + QUEUE RESTORE
-// ===============================
-
+// src/core/router.js - V9.4 - FIXED 404 - KEEPS cart V8 modal + checkout-paypal-v2.js ONLY - NO checkout.js
 const PAGE_MAP = {
-  '/': 'home',
-  '/home': 'home', 'home': 'home',
+  '/': 'home', '/home': 'home', 'home': 'home',
   '/vault': 'vault', 'vault': 'vault',
   '/beats': 'beats', 'beats': 'beats',
   '/beat': 'beat', 'beat': 'beat',
-  '/playlists': 'playlists', 'playlists': 'playlists',
-  '/playlist': 'playlists', 'playlist': 'playlists',
   '/cart': 'cart', 'cart': 'cart',
+  '/licence': 'cart', 'licence': 'cart',
+  '/licence/success': 'success', 'licence/success': 'success',
+  '/licence/cancel': 'cancel', 'licence/cancel': 'cancel',
+  '/licence/vault': 'vault-private', 'licence/vault': 'vault-private',
+  '/checkout': 'cart', 'checkout': 'cart',
   '/arsenal': 'arsenal', 'arsenal': 'arsenal',
   '/cc': 'cc', 'cc': 'cc',
-  '/cc/overview': 'cc', 'cc/overview': 'cc',
-  '/cc/beats': 'cc', 'cc/beats': 'cc',
-  '/cc/audiences': 'cc', 'cc/audiences': 'cc',
-  '/cc/tickets': 'cc', 'cc/tickets': 'cc',
-  '/cc/dropzone': 'cc', 'cc/dropzone': 'cc',
-  '/cc/settings': 'cc', 'cc/settings': 'cc',
 };
 
 export const Router = {
@@ -29,7 +22,7 @@ export const Router = {
       if (!a) return;
       const href = a.getAttribute('href');
       if (!href) return;
-      if (href.startsWith('http://') || href.startsWith('https://')) return;
+      if (href.startsWith('http')) return;
       if (href.startsWith('mailto:') || href.startsWith('tel:')) return;
       e.preventDefault();
       const clean = href.replace(/^#\/?/, '').replace(/^\//, '').replace(/\/$/, '').split('?')[0].split('#')[0];
@@ -37,48 +30,26 @@ export const Router = {
     });
     this.resolve();
   },
-
   async resolve() {
-    let raw = (window.location.hash || '').replace(/^#\/?/, '').split('?')[0].replace(/\/$/, '');
+    let rawFull = (window.location.hash || '').replace(/^#\/?/, '');
+    let raw = rawFull.split('?')[0].replace(/\/$/, '');
     if (!raw || raw === 'index.html' || raw === 'public' || raw === '/') raw = 'home';
     const path = '/' + raw.replace(/^\/+/, '').toLowerCase();
-
-    console.log('%c ROUTING -> ' + path, 'background:#FF1E3C;color:white;padding:2px 8px;border-radius:4px');
+    console.log('%c ROUTING -> ' + path + ' | full=' + rawFull, 'background:#FF1E3C;color:white;padding:2px 8px;border-radius:4px');
     const view = document.getElementById('app-view');
     if (!view) return;
 
-    // === CC - RIGHT DASH + MIDDLE CONTENT ===
     if (path.startsWith('/cc')) {
       try {
         const { mountCC } = await import('../features/controlCenter/cc-router-v2.js');
         await mountCC(path, view);
       } catch (err) {
-        console.error('CC fail', err);
         view.innerHTML = `<div style="padding:40px;color:#FF4D6D">CC Error: ${err.message}</div>`;
       }
       return;
-    } else {
-      // NOT CC - RESTORE QUEUE IMMEDIATELY - THIS FIXES STUCK CC DASH
-      try {
-        const rightEl = document.getElementById('right-sidebar');
-        if (rightEl && rightEl.innerHTML.includes('CONTROL CENTER')) {
-          const { restoreQueue } = await import('../features/controlCenter/cc-router-v2.js');
-          restoreQueue();
-        }
-        // Also clear CC flag
-        if (localStorage.getItem('dt_cc_open')) {
-          localStorage.removeItem('dt_cc_open');
-        }
-        // Uncollapse left if needed
-        const leftEl = document.getElementById('left-sidebar');
-        if (leftEl && path!== '/cc' &&!path.startsWith('/cc/')) {
-          // keep left as user left it, don't force open
-        }
-      } catch {}
     }
 
-    // Normal pages
-    view.innerHTML = `<div style="padding:40px;color:#666;font-family:Orbitron">Loading ${path}...</div>`;
+    view.innerHTML = `<div style="padding:40px;color:#9CA3AF;font-family:system-ui;background:radial-gradient(ellipse at top,#0A1931 0%,#050A14 70%);min-height:60vh">Loading ${path}...</div>`;
 
     setTimeout(async () => {
       try {
@@ -92,7 +63,46 @@ export const Router = {
           const m = await import('../pages/vault-page.js');
           view.innerHTML = m.renderVaultPage();
           if (m.initVaultPage) await m.initVaultPage();
-          window.scrollTo(0, 0);
+          return;
+        }
+        if (path === '/licence/success' || path.startsWith('/licence/success')) {
+          const m = await import('../features/licence/success-v2.js');
+          view.innerHTML = m.render();
+          if (m.init) await m.init();
+          window.scrollTo(0,0);
+          return;
+        }
+        if (path === '/licence/cancel' || path.startsWith('/licence/cancel')) {
+          const m = await import('../features/licence/cancel-v2.js');
+          view.innerHTML = m.render();
+          if (m.init) await m.init();
+          window.scrollTo(0,0);
+          return;
+        }
+        if (path === '/licence/vault' || path.startsWith('/licence/vault') || path === '/vault-private') {
+          try {
+            const m = await import('../features/licence/vault-private-v2.js');
+            view.innerHTML = m.render();
+            if (m.init) await m.init();
+          } catch {
+            const m = await import('../features/licence/vault-private.js');
+            view.innerHTML = m.render();
+            if (m.init) await m.init();
+          }
+          window.scrollTo(0,0);
+          return;
+        }
+        // CART - KEEPS YOUR V8 MODAL - NO checkout.js 404 ANYMORE
+        if (path === '/cart' || path === '/licence' || path === '/checkout') {
+          const cartMod = await import('../features/cart/cart.js');
+          view.innerHTML = await cartMod.renderCart();
+          if (cartMod.initCart) await cartMod.initCart();
+          // ONLY paypal-v2 - does not try to load cart/checkout.js or licence/checkout.js
+          try {
+            const paypalV2 = await import('../features/licence/checkout-paypal-v2.js');
+            if (paypalV2.setupCheckout) paypalV2.setupCheckout();
+          } catch (e) { console.log('paypal-v2 load error', e.message); }
+          window.scrollTo(0,0);
           return;
         }
         if (path === '/beats' || path.startsWith('/beats/')) {
@@ -113,32 +123,16 @@ export const Router = {
           if (m.initPlaylistPage) await m.initPlaylistPage();
           return;
         }
-        if (path === '/cart') {
-          const m = await import('../features/cart/cart.js');
-          view.innerHTML = await m.renderCart();
-          if (m.initCart) await m.initCart();
-          return;
-        }
         if (path === '/arsenal') {
-          try {
-            const m = await import('../pages/arsenal-page.js');
-            view.innerHTML = m.renderArsenalPage();
-            if (m.initArsenalPage) await m.initArsenalPage();
-          } catch {
-            view.innerHTML = `<div style="padding:100px;text-align:center;color:#fff"><h1>ARSENAL</h1><p>Coming soon</p><a href="#/beats" style="color:#FF1E3C">Go to Beats</a></div>`;
-          }
+          const m = await import('../pages/arsenal-page.js');
+          view.innerHTML = m.renderArsenalPage();
+          if (m.initArsenalPage) await m.initArsenalPage();
           return;
         }
-        // 404
-        view.innerHTML = `
-          <div style="min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#050A14;color:#fff;padding:40px">
-            <h1 style="font-family:Orbitron;color:#FF1E3C">404</h1>
-            <p>${path} not found</p>
-            <a href="#/vault" data-link style="margin-top:20px;padding:12px 24px;background:#FF1E3C;color:#fff;border-radius:8px;text-decoration:none">Go Vault</a>
-          </div>`;
+        view.innerHTML = `<div style="min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#050A14;color:#fff;padding:40px"><h1 style="font-family:Orbitron;color:#FF1E3C">404</h1><p>${path} not found</p></div>`;
       } catch (err) {
         console.error('Render error', path, err);
-        view.innerHTML = `<div style="padding:40px;color:#FF4D6D"><h3>Error in ${path}</h3><p>${err.message}</p><a href="#/home" style="color:#1E90FF">Go Home</a></div>`;
+        view.innerHTML = `<div style="padding:40px;color:#FF4D6D;background:#0A1931"><h3>Error in ${path}</h3><p>${err.message}</p></div>`;
       }
     }, 60);
   }
@@ -148,9 +142,7 @@ export function renderRoute(path) {
   if (path) {
     const clean = String(path).replace(/^#\/?/, '').replace(/^\//, '').split('?')[0].split('#')[0];
     window.location.hash = clean || 'home';
-  } else {
-    Router.resolve();
-  }
+  } else Router.resolve();
 }
 export function navigate(path) { renderRoute(path); }
 export function initRouter() { return Router.init(); }
@@ -160,8 +152,4 @@ window.renderRoute = renderRoute;
 window.Router = Router;
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => Router.init(), { once: true });
-} else {
-  Router.init();
-}
-
-
+} else Router.init();

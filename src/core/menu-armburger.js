@@ -1,4 +1,4 @@
-// src/core/menu-armburger.js - FIXED - ALL EXPORTS - D1 SAFE + LICENCE POPUP
+// src/core/menu-armburger.js - FIXED - CART BLINK 2s, NO LICENCE MODAL
 export function initArmburger(){
   const btn=document.getElementById("armburgerBtn");
   const menu=document.getElementById("armburgerMenu");
@@ -33,10 +33,43 @@ function isLikedSafe(id){
   return getLikesIdsSafe().includes(String(id));
 }
 
+function addToCartBlink(beat){
+  try{
+    const fixRaw = v => { let p=Number(v); if(!Number.isFinite(p)) return 9.00; if(p>=1000) p/=100; return Number(p.toFixed(2)); };
+    let cart = JSON.parse(localStorage.getItem("dopetone_cart")||"[]");
+    const idx = cart.findIndex(b=> String(b.id)===String(beat.id));
+    const basicPrice = fixRaw(beat.price?? beat.base_price?? 9.00);
+    if(idx>=0){
+      cart[idx].selected_licence = cart[idx].selected_licence || 'basic';
+    } else {
+      cart.push({...beat, selected_licence:'basic', licence:'basic', price: basicPrice, added_at: Date.now()});
+    }
+    localStorage.setItem("dopetone_cart", JSON.stringify(cart));
+    window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:cart.length}}));
+
+    // BLINK 2s toast
+    let toast = document.getElementById('dt-cart-blink');
+    if(!toast){
+      toast = document.createElement('div');
+      toast.id = 'dt-cart-blink';
+      toast.style.cssText = `position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:12px 18px;border-radius:99px;font:700 13px system-ui;z-index:9999999;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:all.2s;`;
+      document.body.appendChild(toast);
+    }
+    toast.textContent = `Added ${beat.title||'beat'} to cart ✓`;
+    toast.style.opacity='1';
+    toast.style.transform='translateX(-50%) translateY(0)';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=>{
+      toast.style.opacity='0';
+      toast.style.transform='translateX(-50%) translateY(10px)';
+    },2000);
+  }catch(e){ console.error('cart blink fail', e); }
+}
+
 export function createDotsMenu(beat, handlers){
   const mode=String(beat.monetization_mode||beat.monetizationMode||"paid").toLowerCase();
   const liked=isLikedSafe(beat.id);
-  const price=Number(beat.price>=1000?beat.price/100:beat.price||29.99).toFixed(2);
+  const price=Number(beat.price>=1000?beat.price/100:beat.price||9.00).toFixed(2);
   const wrap=document.createElement("div");
   wrap.className="dt-dots-wrap pyramid-dots-wrap";
   wrap.innerHTML=`
@@ -74,8 +107,14 @@ export function createDotsMenu(beat, handlers){
     if(!act) return;
     closeAllMenus();
 
-    // BUY & CART = LICENCE POPUP
-    if(act==="buy" || act==="cart"){
+    // ADD TO CART = BLINK ONLY, NO LICENCE
+    if(act==="cart"){
+      addToCartBlink(beat);
+      return;
+    }
+
+    // BUY = LICENCE POPUP
+    if(act==="buy"){
       const mod = await import("../features/licence/licence.js");
       mod.openLicencePopup(beat, beat.selected_licence||'basic');
       return;
