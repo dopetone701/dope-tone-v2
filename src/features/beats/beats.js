@@ -195,6 +195,9 @@ function trackEvent(id, type) {
 // ============================================================
 // CART - DNA TRUE - ONLY FIXED PART
 // ============================================================
+// ============================================================
+// CART - FIXED = BLINK 2s, NO LICENCE - SAME AS ARMBURGER
+// ============================================================
 function getCart() {
   try { return JSON.parse(localStorage.getItem("dopetone_cart") || "[]"); } catch { return []; }
 }
@@ -207,18 +210,38 @@ function updateCartUI() {
   document.querySelectorAll(".cart-count,#cartItems").forEach(el => el.textContent = String(count));
   window.dispatchEvent(new CustomEvent("cc_cart_updated", { detail: { count } }));
 }
-// REPLACE THESE 3 FUNCTIONS IN YOUR FILE:
 
 function addToCartOnly(beat) {
-  let cart = getCart();
-  if (!cart.some(item => String(item.id) === String(beat.id))) {
-    cart.push({...beat, price: fixPrice(beat.price), selected_licence:'basic', licence:'basic' });
+  try{
+    const fixRaw = v => { let p=Number(v); if(!Number.isFinite(p)) return 9.00; if(p>=1000) p/=100; return Number(p.toFixed(2)); };
+    let cart = getCart();
+    const idx = cart.findIndex(b=> String(b.id)===String(beat.id));
+    const basicPrice = fixRaw(beat.price?? beat.base_price?? 9.00);
+    if(idx>=0){
+      cart[idx].selected_licence = cart[idx].selected_licence || 'basic';
+    } else {
+      cart.push({...beat, selected_licence:'basic', licence:'basic', price: basicPrice, added_at: Date.now()});
+    }
     saveCart(cart);
     trackEvent(beat.id, "cart");
-    window.Auth?.showToast?.(`Added ${beat.title} to cart`);
-  } else {
-    window.Auth?.showToast?.("Already in cart");
-  }
+
+    // BLINK 2s toast
+    let toast = document.getElementById('dt-cart-blink');
+    if(!toast){
+      toast = document.createElement('div');
+      toast.id = 'dt-cart-blink';
+      toast.style.cssText = `position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:12px 18px;border-radius:99px;font:700 13px system-ui;z-index:9999999;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:all.2s;`;
+      document.body.appendChild(toast);
+    }
+    toast.textContent = `Added ${beat.title||'beat'} to cart ✓`;
+    toast.style.opacity='1';
+    toast.style.transform='translateX(-50%) translateY(0)';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=>{
+      toast.style.opacity='0';
+      toast.style.transform='translateX(-50%) translateY(10px)';
+    },2000);
+  }catch(e){ console.error('cart blink fail', e); }
 }
 
 async function buyBeat(beat) {
@@ -233,6 +256,7 @@ function goToBeat(beat) {
   location.hash = `#/beat?id=${id}`;
   window.scrollTo({top:0, behavior:'smooth'});
 }
+
 
 
 const activeDownloads = new Set();
@@ -478,11 +502,10 @@ function createDotsMenu(beat) {
       if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => window.Auth?.showToast?.("Link copied"));
       trackEvent(beat.id, "share");
     }
-    if (act === "download") downloadBeat(beat);
-    if (act === "cart" || act === "buy"){
-      const mod = await import("../../features/licence/licence.js");
-      mod.openLicencePopup(beat, beat.selected_licence||'basic');
-    }
+       if (act === "download") downloadBeat(beat);
+    if (act === "cart"){ addToCartOnly(beat); return; }
+    if (act === "buy"){ buyBeat(beat); return; }
+
   };
 
   return wrap;

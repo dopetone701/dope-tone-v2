@@ -1,4 +1,6 @@
-// src/core/menu-armburger.js - FIXED - CART BLINK 2s, NO LICENCE MODAL
+// src/core/menu-armburger.js - FIXED - SINGLE CART + D1 DISPATCH - NO ROUTE BREAK
+const STATS_API = 'https://dopetone-stats.dopetone701.workers.dev';
+
 export function initArmburger(){
   const btn=document.getElementById("armburgerBtn");
   const menu=document.getElementById("armburgerMenu");
@@ -33,10 +35,26 @@ function isLikedSafe(id){
   return getLikesIdsSafe().includes(String(id));
 }
 
+function getAnon(){
+  let a = localStorage.getItem('dt_anon_id') || localStorage.getItem('dopetone_user_id');
+  if(!a){
+    a='anon_'+Math.random().toString(36).slice(2)+Date.now().toString(36);
+    localStorage.setItem('dt_anon_id', a);
+  }
+  return a;
+}
+
 function addToCartBlink(beat){
   try{
+    const anon = getAnon();
+    const cartKey = `dopetone_cart_${anon}`;
     const fixRaw = v => { let p=Number(v); if(!Number.isFinite(p)) return 9.00; if(p>=1000) p/=100; return Number(p.toFixed(2)); };
-    let cart = JSON.parse(localStorage.getItem("dopetone_cart")||"[]");
+
+    let cart = [];
+    try{
+      cart = JSON.parse(localStorage.getItem(cartKey) || localStorage.getItem("dopetone_cart") || "[]");
+    }catch{ cart = []; }
+
     const idx = cart.findIndex(b=> String(b.id)===String(beat.id));
     const basicPrice = fixRaw(beat.price?? beat.base_price?? 9.00);
     if(idx>=0){
@@ -44,8 +62,32 @@ function addToCartBlink(beat){
     } else {
       cart.push({...beat, selected_licence:'basic', licence:'basic', price: basicPrice, added_at: Date.now()});
     }
-    localStorage.setItem("dopetone_cart", JSON.stringify(cart));
-    window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:cart.length}}));
+
+    localStorage.setItem(cartKey, JSON.stringify(cart));
+    localStorage.setItem("dopetone_cart", JSON.stringify(cart)); // keep legacy for old cart page
+    localStorage.setItem("dopetone_cart_count", String(cart.length));
+    localStorage.setItem("dt_cart_changed", Date.now().toString());
+
+    // DISPATCH TO CC + CART + PLAYLIST - NO BREAK
+    window.dispatchEvent(new CustomEvent("cc:cartLive",{detail:{beatId: beat.id, action:'add', count: cart.length}}));
+    window.dispatchEvent(new CustomEvent("cc_cart_updated",{detail:{count:cart.length, beatId: beat.id}}));
+    window.dispatchEvent(new CustomEvent("cartUpdated",{detail:{beatId: beat.id, action:'add', count: cart.length}}));
+    window.dispatchEvent(new Event('storage'));
+
+    // D1 SINGLE TRUTH - with valid anon, no ghost
+    fetch(`${STATS_API}/api/stats/event`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        beatId: parseInt(beat.id),
+        beat_id: parseInt(beat.id),
+        eventType:'cart_add',
+        event_type:'cart_add',
+        anon_id: anon,
+        user_key: anon,
+        user_id: anon
+      })
+    }).catch(()=>{});
 
     // BLINK 2s toast
     let toast = document.getElementById('dt-cart-blink');

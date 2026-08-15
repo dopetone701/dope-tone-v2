@@ -10,7 +10,7 @@ const LS_INDEX = 'dt_index_v3';
 const LS_LIKES = 'dopetone_likes';
 const STATS_API = 'https://dopetone-stats.dopetone701.workers.dev';
 let playedBeats = new Set();
-function logBeatEvent(id, type){ if(!id) return; fetch(`${STATS_API}/api/stats/event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({beatId:parseInt(id),eventType:type})}).catch(()=>{}) }
+function logBeatEvent(id, type){ if(!id) return; const a=getAnon(); fetch(`${STATS_API}/api/stats/event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({beatId:parseInt(id),eventType:type, anon_id:a, user_key:a, user_id:a})}).catch(()=>{}) }
 
 const AUDIO_CACHE = 'dt-audio-v1';
 
@@ -50,6 +50,9 @@ const getSrc = t =>
   t?.audio_url ||
   '';
 
+
+
+  function getAnon(){ let a=localStorage.getItem('dt_anon_id'); if(!a){a='anon_'+Math.random().toString(36).slice(2)+Date.now(); localStorage.setItem('dt_anon_id',a);} return a; }
 
 // ============================================================
 // AUDIO CACHE
@@ -200,9 +203,12 @@ export function initPlayerEngine(){
       bootPlayerListeners();
     }
 
+    // RESTORE LOCKED TRACK FROM CC
+    const locked = localStorage.getItem('dt_cc_locked_track');
+    if(locked) window.currentBeatId = locked;
+
     return audio;
   }
-
 
   audio = new Audio();
 
@@ -217,8 +223,23 @@ export function initPlayerEngine(){
 
   bootPlayerListeners();
 
+  // RESTORE LOCKED TRACK ON BOOT
+  const locked = localStorage.getItem('dt_cc_locked_track');
+  const lockedTitle = localStorage.getItem('dt_cc_locked_title');
+  if(locked){
+    window.currentBeatId = locked;
+    console.log('[PLAYER] Restored locked track', locked, lockedTitle);
+  }
+
+  // RESTORE NOW PLAYING
+  try{
+    const np = JSON.parse(localStorage.getItem('dt_now_playing')||'null');
+    if(np?.id) window.currentBeatId = np.id;
+  }catch{}
+
   return audio;
 }
+
 
 
 // ============================================================
@@ -294,7 +315,7 @@ function bootPlayerListeners(){
   // PLAY
   // ----------------------------------------------------------
 
-  audio.addEventListener('play', ()=>{
+ audio.addEventListener('play', ()=>{
 
     window.__SHOULD_PLAY__ = true;
 
@@ -302,24 +323,45 @@ function bootPlayerListeners(){
 
     syncPlayIcons(true);
 
-       const beatId = window.__CURRENT_BEAT__?.id;
+    const beatId = window.__CURRENT_BEAT__?.id;
+    const beatTitle = window.__CURRENT_BEAT__?.title || '';
+    
+    // CC PERFECT SYNC - DO NOT REMOVE
+    window.currentBeatId = beatId || null;
+    window.__CURRENT_ID__ = beatId || null;
+    
+    if(beatId){
+      localStorage.setItem('dt_now_playing', JSON.stringify({id:beatId, title:beatTitle}));
+      
+      // Update locked track if follow is ON
+      if(localStorage.getItem('dt_cc_follow_player')==='1'){
+        localStorage.setItem('dt_cc_locked_track', String(beatId));
+        if(beatTitle) localStorage.setItem('dt_cc_locked_title', beatTitle);
+      }
+
+      // CC EVENTS
+      document.dispatchEvent(new CustomEvent('dt-track-play', {detail:{id:beatId, beatId:beatId, title:beatTitle}}));
+      document.dispatchEvent(new CustomEvent('dt-play', {detail:{id:beatId, beatId:beatId, title:beatTitle}}));
+    }
+
     if(beatId &&!playedBeats.has(String(beatId))){
       logBeatEvent(beatId, 'play');
       playedBeats.add(String(beatId));
     }
-
 
     document.dispatchEvent(
       new CustomEvent('playerPlay',{
         detail:{
           index:DTPlayer.index,
           listId:window.__CURRENT_LIST__,
-          beatId:window.__CURRENT_BEAT__?.id
+          beatId:window.__CURRENT_BEAT__?.id,
+          title:window.__CURRENT_BEAT__?.title
         }
       })
     );
 
   });
+
 
 
   // ----------------------------------------------------------
@@ -898,12 +940,15 @@ export function initPlayerBar(){
       const liked = toggleLike(cur.id);
       syncHearts(liked, cur.id);
 
-      // D1 BLACK HOLE
-      fetch(`https://dopetone-stats.dopetone701.workers.dev/api/stats/event`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({beatId: parseInt(cur.id), eventType: 'like'})
-      }).catch(()=>{});
+      // D1 BLACK HOLE - FIXED WITH ANON
+const a=getAnon();
+fetch(`${STATS_API}/api/stats/event`,{
+  method:'POST',
+  headers:{'Content-Type':'application/json'},
+  body: JSON.stringify({beatId: parseInt(cur.id), eventType: liked?'like':'like_remove', anon_id:a, user_key:a, user_id:a})
+}).catch(()=>{});
+window.dispatchEvent(new CustomEvent('dt-like-changed',{detail:{beatId:cur.id, action: liked?'like':'like_remove'}}));
+
 
       // vault sync so Liked page updates
       let likedIds = JSON.parse(localStorage.getItem('dt_liked_v1')||'[]');
@@ -1118,7 +1163,6 @@ export async function playTrack(
 
   if(!src) return;
 
-
   // ----------------------------------------------------------
   // UPDATE QUEUE INDEX
   // ----------------------------------------------------------
@@ -1148,9 +1192,8 @@ export async function playTrack(
 
   }
 
-
   // ----------------------------------------------------------
-  // CURRENT TRACK
+  // CURRENT TRACK - CC SYNC PERFECT
   // ----------------------------------------------------------
 
   window.__CURRENT_BEAT__ =
@@ -1159,9 +1202,20 @@ export async function playTrack(
   window.__SHOULD_PLAY__ =
     shouldPlay;
 
+  // ---- CC PERFECT COMMS - DO NOT REMOVE ----
+  window.currentBeatId = track.id;
+  window.__CURRENT_ID__ = track.id;
+  localStorage.setItem('dt_now_playing', JSON.stringify({id:track.id, title:track.title, cover:track.cover_url||track.cover||''}));
+  // save locked for CC graph V15
+  if(localStorage.getItem('dt_cc_follow_player')==='1'){
+    localStorage.setItem('dt_cc_locked_track', String(track.id));
+    localStorage.setItem('dt_cc_locked_title', track.title||'');
+  }
+  document.dispatchEvent(new CustomEvent('dt-track-play', {detail:{id:track.id, beatId:track.id, title:track.title}}));
+  document.dispatchEvent(new CustomEvent('dt-play', {detail:{id:track.id, beatId:track.id, title:track.title}}));
+  document.dispatchEvent(new CustomEvent('cc_track_changed', {detail:{id:track.id, title:track.title}}));
 
   updatePlayerUI(track);
-
 
   // ----------------------------------------------------------
   // SAME TRACK = DON'T RELOAD
@@ -1185,10 +1239,8 @@ export async function playTrack(
 
   }
 
-
   window.__CURRENT_SRC__ =
     src;
-
 
   // ----------------------------------------------------------
   // LOAD TRACK
@@ -1198,7 +1250,6 @@ export async function playTrack(
     await getPlayableSource(track);
 
   if(!playable) return;
-
 
   // If user selected another track while this
   // async request was running, don't overwrite it.
@@ -1220,7 +1271,6 @@ export async function playTrack(
 
   }
 
-
   if(currentObjectURL){
 
     try{
@@ -1233,7 +1283,6 @@ export async function playTrack(
 
   }
 
-
   if(playable.startsWith('blob:')){
 
     currentObjectURL =
@@ -1241,12 +1290,10 @@ export async function playTrack(
 
   }
 
-
   a.src =
     playable;
 
   a.load();
-
 
   // ----------------------------------------------------------
   // PLAY
@@ -1269,7 +1316,6 @@ export async function playTrack(
 
   }
 
-
   // ----------------------------------------------------------
   // PRELOAD NEXT
   // ----------------------------------------------------------
@@ -1279,6 +1325,7 @@ export async function playTrack(
   );
 
 }
+
 
 
 // ============================================================

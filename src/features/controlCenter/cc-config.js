@@ -1,23 +1,15 @@
-// cc-config.js - PRO CONFIG - Single source, fixed CORS + DELETE
+// cc-config.js - PRO CONFIG - Fixed beatId guard
 export const MAIN_API = 'https://api.dopetonevault.com';
 export const BEATS_API = 'https://all-beats-analytics-api.dopetone701.workers.dev';
 export const STATS_API = 'https://dopetone-stats.dopetone701.workers.dev';
 export const ADMIN_EMAIL = 'dopetone701@gmail.com';
 export const DEFAULT_LOGO = 'images/logo.png';
 
-// R2 CDN base - matches your R2 screenshot structure
 export const R2_CDN = 'https://dopetonevault.com/cdn';
-export const R2_FOLDERS = {
-  BEATS: 'beats',
-  COVERS: 'covers',
-  WAVS: 'wavs',
-  PROJECTS: 'projects',
-  AUDIO: 'beats',
-};
+export const R2_FOLDERS = { BEATS: 'beats', COVERS: 'covers', WAVS: 'wavs', PROJECTS: 'projects', AUDIO: 'beats' };
 
 export const user = JSON.parse(localStorage.getItem('dopetone_user') || 'null') || {};
 
-// Global state
 export let allBeats = [];
 export let filteredBeats = [];
 export let currentTrack = null;
@@ -28,19 +20,33 @@ export let currentBeatId = null;
 export let currentRange = 'day';
 export const charts = {};
 
-// Setters
+const VALID_RANGES = ['day','week','month','year','all'];
+
 export function setAllBeats(beats) { allBeats = Array.isArray(beats)? beats : []; }
 export function setFilteredBeats(beats) { filteredBeats = Array.isArray(beats)? beats : []; }
 export function setCurrentTrack(track) { currentTrack = track; }
 export function setIsPlaying(state) { isPlaying = !!state; }
 export function setTopTracks(tracks) { topTracks = tracks || []; }
 export function setCurrentTopIndex(idx) { currentTopIndex = idx; }
-export function setCurrentBeatId(id) { currentBeatId = id ? String(id) : null; }
-export function setCurrentRange(range) { currentRange = range; }
 
-// ===== EVENTS (fire-and-forget) =====
+export function setCurrentBeatId(id) { 
+  if(!id) { currentBeatId = null; return; }
+  const s = String(id).toLowerCase();
+  if(VALID_RANGES.includes(s)){ 
+    console.warn('[CC Config] blocked range as beatId:', id);
+    currentBeatId = null; 
+    return; 
+  }
+  currentBeatId = String(id); 
+}
+export function setCurrentRange(range) {
+  const r = String(range||'day').toLowerCase();
+  currentRange = VALID_RANGES.includes(r) ? r : 'day';
+}
+
 export async function logBeatEvent(beatId, eventType) {
   if (!beatId) return;
+  if(VALID_RANGES.includes(String(beatId).toLowerCase())) return;
   try {
     await fetch(`${STATS_API}/api/stats/event`, {
       method: 'POST',
@@ -54,7 +60,6 @@ export const logLike = (beatId, liked = true) => liked && logBeatEvent(beatId, '
 export const logDownload = (beatId) => logBeatEvent(beatId, 'download');
 export const logCart = (beatId, added = true) => added && logBeatEvent(beatId, 'cart');
 
-// ===== LOAD STATS =====
 export async function loadDashboardStats() {
   try {
     const res = await fetch(`${STATS_API}/api/stats/global?range=${currentRange}`);
@@ -75,7 +80,6 @@ export async function loadDashboardStats() {
   }
 }
 
-// ===== LOAD BEATS FROM R2/D1 WORKER =====
 export async function loadAllBeats() {
   try {
     const res = await fetch(`${BEATS_API}/beats`, { cache: 'no-store' });
@@ -105,7 +109,6 @@ export async function loadTopTracks() {
   }
 }
 
-// Helpers
 export function formatNumber(num) {
   const n = Number(num) || 0;
   if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';

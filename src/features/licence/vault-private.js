@@ -60,7 +60,7 @@ export function render(){
   <div class="vault-wrap" style="background:radial-gradient(ellipse at top, #0A1931 0%, #050A14 70%)">
     <div class="vault-head">
       <h1>🔒 Your Private Vault</h1>
-      <div id="status" class="v-muted">Verifying licence - same info as licence popup...</div>
+      <div id="status" class="v-muted">Verifying licence -...</div>
     </div>
     <div id="downloads"></div>
   </div>`;
@@ -80,7 +80,7 @@ export async function init(){
     const data = await r.json();
     if(data.status!=='paid'){ statusEl.textContent='Status: '+data.status; return; }
     const email=data.customer_email||''; const date=new Date().toLocaleString();
-    statusEl.innerHTML='✅ Paid - $'+(data.total_cents/100).toFixed(2)+' - '+data.downloads.length+' beats unlocked - <span style="color:#FF1E3C">Same info as licence</span><br><small>'+email+' • '+date+'</small>';
+    statusEl.innerHTML='✅ Paid - $'+(data.total_cents/100).toFixed(2)+' - '+data.downloads.length+' beats unlocked - <span style="color:#FF1E3C"></span><br><small>'+email+' • '+date+'</small>';
 
     data.downloads.forEach(d=>{
       const rule=getRule(d.license_type);

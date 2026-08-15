@@ -67,3 +67,50 @@
   flex:0 0 auto!important;
   white-space:nowrap!important;
 }
+
+
+/* OVERRIDE - FIX HOME RELOAD ONLY - Image 1 -> Image 3 */
+#homeSmartWrap{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  display:block!important;
+}
+#homeSmartWrap .arsenal-full{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+#homeSmartWrap #pillsMount{
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+  max-width:100%!important;
+  min-width:0!important;
+  width:100%!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  white-space:nowrap!important;
+  box-sizing:border-box!important;
+}
+#homeSmartWrap #waveList{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+#homeSmartWrap .wave-row{
+  max-width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+#homeSmartWrap .wave-bar{
+  min-width:0!important;
+  flex:1 1 0!important;
+  overflow:hidden!important;
+}

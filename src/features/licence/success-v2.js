@@ -88,7 +88,7 @@ export async function init(){
   if(localStorage.getItem(shippedKey(sessionId))==="1"){
     titleEl.textContent="Already Unlocked"; amountEl.textContent="✅ Saved";
     subEl.innerHTML="This PayPal payment was already processed.<br/>Cart cleared.";
-    statusEl.style.background='rgba(0,255,198,.1)'; statusEl.style.color='#00ffc6'; statusEl.textContent="✅ PayPal already saved";
+    statusEl.style.background='rgba(0,255,198,.1)'; statusEl.style.color='#00ffc6'; statusEl.textContent="✅ Enter Vault To Download Now";
     enterVaultBtn.href = `#/licence/vault?session_id=${encodeURIComponent(sessionId)}`;
     localStorage.setItem('dopetone_last_session_id', sessionId);
     await clearAllLocalHistory(sessionId, []);
@@ -141,7 +141,7 @@ export async function init(){
         }catch{}
 
         await clearAllLocalHistory(sessionId, purchasedIds);
-        statusEl.textContent=`✅ Revenue secured - $${dollars} - PayPal - cart + D1 cleared`;
+        statusEl.textContent=`✅ Click Enter -  Vault To Townload NOW`;
         return;
       }
       window._retryCount++;
