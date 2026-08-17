@@ -1,3 +1,4 @@
+// src/features/licence/licence.js - V12 - FULL WORKING - ONE FILE - LIVE SERVER 5500 SAFE - PAYPAL-V2 INSTANT
 const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 const fix = v => { let p=Number(v); if(!Number.isFinite(p)) return 29.99; if(p>=1000) p/=100; return Number(p.toFixed(2)); };
 const getBasic = b => fix(b?.price?? b?.base_price?? 29.99);
@@ -51,7 +52,6 @@ export function openLicencePopup(beat, selected="basic", onSelect=null){
     if(idx>=0){ cart[idx].selected_licence=lic; cart[idx].price=p; cart[idx].licence=lic; }
     else { cart.push({...beat, selected_licence:lic, licence:lic, price:p, added_at:Date.now()}); trackEvent(beat.id,"cart"); }
     localStorage.setItem("dopetone_cart",JSON.stringify(cart));
-    // also set dopetone_licences for checkout-paypal-v2
     let licencesStore={}; try{ licencesStore=JSON.parse(localStorage.getItem("dopetone_licences")||"{}"); }catch{}
     licencesStore[beat.id]={name:lic.toUpperCase(), price:p};
     licencesStore[String(beat.id)]={name:lic.toUpperCase(), price:p};
@@ -61,18 +61,15 @@ export function openLicencePopup(beat, selected="basic", onSelect=null){
     return p;
   }
 
-  // NEW: instant PayPal modal, no cart page
   function checkoutNow(lic){
     const p=addToCartAndStay(lic);
     overlay.remove();
-    // open paypal modal instantly
     setTimeout(()=>{
       if(window.DT_openCartPaypalModal){
         window.DT_openCartPaypalModal();
       } else if(window.createPaypalCheckout){
         window.createPaypalCheckout();
       } else {
-        // fallback go to cart and auto-open
         location.hash='#/cart';
         setTimeout(()=> window.DT_openCartPaypalModal?.() || document.getElementById('goCheck')?.click(), 800);
       }
@@ -85,7 +82,6 @@ export function openLicencePopup(beat, selected="basic", onSelect=null){
     if(!viewAll){
       modal.classList.remove("wide");
       document.getElementById("licTitle").textContent=`Choose Licence - ${beat.title||'My Own'}`;
-      // CHANGED: Add to Cart -> Checkout
       const btnLabel = isCartContext ? `Use ${l.name} • ${l.price===0?'FREE':'$'+l.price.toFixed(2)}` : `Checkout • ${l.price===0?'FREE':'$'+l.price.toFixed(2)}`;
       body.innerHTML=`
         <div class="lic-single">
@@ -107,7 +103,7 @@ export function openLicencePopup(beat, selected="basic", onSelect=null){
       document.getElementById("viewAllBtn").onclick=()=>{ viewAll=true; render(); };
       document.getElementById("useBtn").onclick=()=>{
         if(isCartContext){ addToCartAndStay(current); overlay.remove(); }
-        else { checkoutNow(current); } // INSTANT CHECKOUT
+        else { checkoutNow(current); }
       };
     } else {
       modal.classList.add("wide");
@@ -117,7 +113,6 @@ export function openLicencePopup(beat, selected="basic", onSelect=null){
         <div class="lic-grid">
           ${licences.map(x=>{
             const isSel = x.id===current;
-            // CHANGED: Add to Cart -> Select
             const label = isSel ? 'Selected ✓' : `Select ${x.name}`;
             return `
             <div class="lic-card ${isSel?'active':''}" data-lic="${x.id}">
@@ -141,14 +136,14 @@ export function openLicencePopup(beat, selected="basic", onSelect=null){
           e.stopPropagation();
           const lic=b.dataset.add;
           current=lic;
-          render(); // only select, don't add to cart yet
+          render();
         };
       });
 
       document.getElementById("backSingle").onclick=()=>{ viewAll=false; render(); };
       document.getElementById("confirmAll").onclick=()=>{
         if(isCartContext){ addToCartAndStay(current); overlay.remove(); }
-        else { checkoutNow(current); } // INSTANT PAYPAL
+        else { checkoutNow(current); }
       };
     }
   }
@@ -158,6 +153,76 @@ export function openLicencePopup(beat, selected="basic", onSelect=null){
   document.getElementById("licClose").onclick=()=> overlay.remove();
 }
 
-export function renderLicence(){ return `<div id="licMount"></div>`; }
-export async function initLicence(){}
-window.openLicencePopup=openLicencePopup;
+// EXPORTS FOR FOOTER LINKS
+export { licenceData, priceFor, getBasic };
+export const LICENSES = licenceData({price:29.99, title:'Default'});
+
+export function renderLicence(beat = {title:'Dope Tone Beat', price:29.99, genre:'Trap', bpm:140}){
+  const licences = licenceData(beat);
+  return `
+<div class="wrap">
+  <div class="topbar">
+    <a href="#/home" data-link class="logo-link">
+      <img src="/images/logo.png" alt="logo" onerror="this.style.display='none'">
+      <span>DOPE TONE</span>
+    </a>
+    <a href="#/help" data-link class="back-btn">← Back to Help</a>
+  </div>
+
+  <div class="hero" id="licenseHero">
+    <small>VAULT • LICENSE</small>
+    <h1>License Info</h1>
+    <p>Basic is true price • Pro x2.2 • Exclusive x10 • Auto-synced with checkout. Pro standard like BeatStars adapted for Vault.</p>
+    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+      <a href="#/beats" data-link style="padding:10px 18px;background:#FF1E3C;color:#fff;border-radius:100px;text-decoration:none;font-size:13px;font-weight:700">Explore Beats</a>
+      <a href="#/cart" data-link style="padding:10px 18px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;border-radius:100px;text-decoration:none;font-size:13px">View Cart</a>
+    </div>
+  </div>
+
+  <div class="panel" id="licenseSection">
+    <h2>License Comparison — Dope Tone Vault (Pro Standard)</h2>
+    <p class="muted">Basic $${licences[1].price} • Pro $${licences[2].price} • Exclusive $${licences[3].price}</p>
+    <table>
+      <thead><tr><th>FEATURE</th>${licences.map(l=>`<th>${l.name}<br><small>${l.price===0?'FREE':'$'+l.price}</small></th>`).join('')}</tr></thead>
+      <tbody>
+        <tr><td>Files</td><td>MP3 Tagged</td><td>MP3 Untagged</td><td>MP3 + WAV</td><td>MP3 + WAV + STEMS</td></tr>
+        <tr><td>Streams</td><td>0</td><td>5,000</td><td>100,000</td><td>Unlimited</td></tr>
+        <tr><td>Videos</td><td>Non-profit</td><td>1 monetized</td><td>Unlimited</td><td>Unlimited</td></tr>
+        <tr><td>Radio</td><td>No</td><td>No</td><td>1 station</td><td>Unlimited</td></tr>
+        <tr><td>Monetization</td><td>No</td><td>Yes limited</td><td>YouTube/Spotify OK</td><td>100% you</td></tr>
+        <tr><td>Rights</td><td>Practice + Credit</td><td>Non-exclusive lease</td><td>10 years</td><td>Full ownership - Beat removed</td></tr>
+        <tr><td>Credit</td><td>Required</td><td>Prod. by Dope Tone</td><td>Prod. by Dope Tone</td><td>Optional</td></tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+      ${licences.map(l=>`
+        <div style="padding:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px">
+          <div style="font-size:10px;letter-spacing:.12em;color:#00FFC6">${l.badge}</div>
+          <div style="font-weight:800;margin:4px 0">${l.name} - ${l.price===0?'FREE':'$'+l.price}</div>
+          <div style="font-size:11px;opacity:.8;line-height:1.5">${l.features.map(f=>`✓ ${esc(f)}`).join('<br>')}<br>${l.not.map(f=>`✕ ${esc(f)}`).join('<br>')}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div style="margin-top:24px;padding:16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px">
+      <h3 style="font-size:14px;margin-bottom:8px">What You CANNOT Do</h3>
+      <p class="muted" style="font-size:12px;line-height:1.6">No resale of beat as-is, no re-licensing, no sharing STEMS/WAV files. Free beats cannot be used commercially. Chargebacks = license revoked automatically. All licenses bound to one artist / one project, non-transferable.</p>
+    </div>
+  </div>
+</div>
+`;
+}
+
+export async function initLicence(){
+  window.scrollTo(0,0);
+}
+
+export const renderLicense = renderLicence;
+export const initLicense = initLicence;
+export const render = renderLicence;
+export const init = initLicence;
+
+window.openLicencePopup = openLicencePopup;
+window.openLicensePopup = openLicencePopup;
+export default { openLicencePopup, renderLicence, initLicence, renderLicense, initLicense, render, init, licenceData, priceFor };

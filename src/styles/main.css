@@ -14,6 +14,8 @@
 @import url('../features/home/notice-board.css');
 @import url('../pages/home.css');
 @import url('../pages/footer.css');
+@import url('../pages/footer-links/dt-about.css');
+@import url('../pages/footer-links/help.css');
 @import url('../features/beats/grid.css');
 @import url('../pages/beat-page.css');
 @import url('../pages/vault.css');

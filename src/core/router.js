@@ -1,4 +1,4 @@
-// src/core/router.js - V9.4 - FIXED 404 - KEEPS cart V8 modal + checkout-paypal-v2.js ONLY - NO checkout.js
+// src/core/router.js - V9.6 FINAL - FIXED FOOTER 404 - KEEPS V9.4 cart V8 + paypal-v2
 const PAGE_MAP = {
   '/': 'home', '/home': 'home', 'home': 'home',
   '/vault': 'vault', 'vault': 'vault',
@@ -12,6 +12,17 @@ const PAGE_MAP = {
   '/checkout': 'cart', 'checkout': 'cart',
   '/arsenal': 'arsenal', 'arsenal': 'arsenal',
   '/cc': 'cc', 'cc': 'cc',
+  '/about': 'dt-about', 'about': 'dt-about',
+  '/dt-about': 'dt-about', 'dt-about': 'dt-about',
+  '/help': 'help', 'help': 'help',
+  '/faq': 'faq', 'faq': 'faq',
+  '/license': 'license-help', 'license': 'license-help',
+  '/license-help': 'license-help', 'license-help': 'license-help',
+  '/licence-help': 'license-help', 'licence-help': 'license-help',
+  '/tickets': 'tickets', 'tickets': 'tickets',
+  '/terms': 'help', 'terms': 'help',
+  '/privacy': 'help', 'privacy': 'help',
+  '/checkout-info': 'checkout', 'checkout-info': 'checkout',
 };
 
 export const Router = {
@@ -92,12 +103,10 @@ export const Router = {
           window.scrollTo(0,0);
           return;
         }
-        // CART - KEEPS YOUR V8 MODAL - NO checkout.js 404 ANYMORE
         if (path === '/cart' || path === '/licence' || path === '/checkout') {
           const cartMod = await import('../features/cart/cart.js');
           view.innerHTML = await cartMod.renderCart();
           if (cartMod.initCart) await cartMod.initCart();
-          // ONLY paypal-v2 - does not try to load cart/checkout.js or licence/checkout.js
           try {
             const paypalV2 = await import('../features/licence/checkout-paypal-v2.js');
             if (paypalV2.setupCheckout) paypalV2.setupCheckout();
@@ -129,10 +138,65 @@ export const Router = {
           if (m.initArsenalPage) await m.initArsenalPage();
           return;
         }
+
+        // ===== FOOTER LINKS - FIXED - NO CSS IMPORT ISSUE =====
+        if (path === '/about' || path === '/dt-about') {
+          const m = await import('../pages/footer-links/dt-about.js');
+          view.innerHTML = m.renderDtAbout? m.renderDtAbout() : m.render? m.render() : '';
+          if (m.initDtAbout) await m.initDtAbout();
+          if (m.init) await m.init();
+          window.scrollTo(0,0);
+          return;
+        }
+        if (path === '/help' || path === '/terms' || path === '/privacy') {
+          const m = await import('../pages/footer-links/help-page.js');
+          view.innerHTML = m.renderHelp? m.renderHelp() : m.render? m.render() : '';
+          if (m.initHelp) await m.initHelp();
+          if (m.init) await m.init();
+          setTimeout(()=>{
+            if(path === '/terms') document.getElementById('termsSection')?.scrollIntoView({behavior:'smooth'});
+            if(path === '/privacy') document.getElementById('privacySection')?.scrollIntoView({behavior:'smooth'});
+          }, 300);
+          window.scrollTo(0,0);
+          return;
+        }
+        if (path === '/faq') {
+          const m = await import('../pages/footer-links/faq.js');
+          view.innerHTML = m.renderFaq? m.renderFaq() : m.render? m.render() : '';
+          if (m.initFaq) await m.initFaq();
+          if (m.init) await m.init();
+          window.scrollTo(0,0);
+          return;
+        }
+        // FIXED: added /license-help + /licence-help both
+        if (path === '/license' || path === '/license-help' || path === '/licence-help') {
+          const m = await import('../features/licence/licence.js');
+          view.innerHTML = m.renderLicence? m.renderLicence() : m.render? m.render() : '';
+          if (m.initLicence) await m.initLicence();
+          if (m.init) await m.init();
+          window.scrollTo(0,0);
+          return;
+        }
+        if (path === '/tickets') {
+          const m = await import('../pages/footer-links/tickets.js');
+          view.innerHTML = m.renderTickets? m.renderTickets() : m.render? m.render() : '';
+          if (m.initTickets) await m.initTickets();
+          if (m.init) await m.init();
+          window.scrollTo(0,0);
+          return;
+        }
+        if (path === '/checkout-info') {
+          const m = await import('../pages/footer-links/checkout.js');
+          view.innerHTML = m.renderCheckoutInfo? m.renderCheckoutInfo() : m.render? m.render() : '';
+          if (m.init) await m.init();
+          window.scrollTo(0,0);
+          return;
+        }
+
         view.innerHTML = `<div style="min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#050A14;color:#fff;padding:40px"><h1 style="font-family:Orbitron;color:#FF1E3C">404</h1><p>${path} not found</p></div>`;
       } catch (err) {
         console.error('Render error', path, err);
-        view.innerHTML = `<div style="padding:40px;color:#FF4D6D;background:#0A1931"><h3>Error in ${path}</h3><p>${err.message}</p></div>`;
+        view.innerHTML = `<div style="padding:40px;color:#FF4D6D;background:#0A1931"><h3>Error in ${path}</h3><p>${err.message}</p><pre style="font-size:11px;opacity:.7">${err.stack||''}</pre></div>`;
       }
     }, 60);
   }

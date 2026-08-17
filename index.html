@@ -3,71 +3,74 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<base href="/">
 <title>DOPE TONE VAULT V2</title>
 
-<!-- 🚨 FINAL FIX V3 - Kills beats#/#/beats loop -->
+<!-- V12 FINAL FIX - ONE HTML SPA - Kills beats#/#/beats loop + keeps cart safe -->
 <script>
   (function(){
     try {
-      var isLive = location.port === "5500" || location.hostname.includes("127.0.0.1");
-      if(!isLive) return;
-
       var full = location.href;
-      var pathname = location.pathname;
-      var hash = location.hash || "";
-
-      // If we are in bad state like /beats#/#/beats or /vault#/vault
-      var isBad = pathname!== "/" && pathname!== "/index.html" &&!pathname.endsWith("/index.html");
       var hasDoubleHash = (full.match(/#/g) || []).length > 1;
-      var hasWeird = full.includes("#/#/") || full.includes("beats#") || full.includes("vault#");
+      var hasWeird = full.includes("#/#/") || full.includes("beats#") || full.includes("vault#") || full.includes("cart#");
 
-      if(isBad || hasDoubleHash || hasWeird){
-        // Extract the REAL intended route = last #/something in URL
-        var intended = "/";
-        if(hash){
-          // Get last segment after last #
-          var parts = hash.split("#").filter(Boolean);
-          var last = parts[parts.length - 1] || "/";
-          if(!last.startsWith("/")) last = "/" + last;
-          intended = last.split("?")[0].split("#")[0] || "/";
-        } else {
-          intended = pathname;
-        }
-        // Clean
-        intended = intended.replace(/\/+/g, "/").replace(/\/+$/, "") || "/";
-        if(!intended.startsWith("/")) intended = "/" + intended;
-
-        var finalUrl = "/#" + intended.replace(/^\//, "");
-        console.log("[V3 FIX] BAD URL:", full, "->", finalUrl);
+      if(hasDoubleHash || hasWeird){
+        var hash = location.hash || "";
+        var parts = hash.split("#").filter(Boolean);
+        var last = parts[parts.length - 1] || "home";
+        if(!last.startsWith("/")) last = "/" + last;
+        last = last.split("?")[0].split("#")[0] || "/home";
+        last = last.replace(/\/+/g, "/").replace(/\/+$/, "") || "/home";
+        var finalUrl = "/#" + last.replace(/^\//, "");
+        console.log("[V12 FIX] BAD URL:", full, "->", finalUrl);
         location.replace(finalUrl);
       }
-    } catch(e){ console.log(e); }
+      // If no hash at all, go home
+      if(!location.hash || location.hash === "#"){
+        history.replaceState(null, "", "#/home");
+      }
+    } catch(e){}
   })();
 </script>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.0/dist/apexcharts.min.js"></script>
+<script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
 
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Orbitron:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/src/styles/main.css">
-<style>html{visibility:hidden;opacity:0}html.loaded{visibility:visible;opacity:1;transition:.2s ease}</style>
+
+<style>
+  html{visibility:hidden;opacity:0}
+  html.loaded{visibility:visible;opacity:1;transition:.2s ease}
+  #app-shell{min-height:100vh;display:flex;flex-direction:column;background:#050A14}
+  #main-row{flex:1;display:flex}
+  #app-view{flex:1;min-height:60vh}
+</style>
 </head>
 <body>
+
 <div id="app-shell">
   <div id="topbar"></div>
   <div id="main-row">
     <div id="left-sidebar"></div>
-    <div id="app-view"></div>
+    <div id="app-view">
+      <!-- Router injects here - all pages: home, beats, cart, about, help, faq, license, etc -->
+      <div style="padding:60px;text-align:center;color:#9CA3AF;font-family:system-ui">Loading DOPE TONE VAULT...</div>
+    </div>
     <div id="right-sidebar"></div>
   </div>
   <div id="player-bar"></div>
 </div>
+
+<!-- ONE ENTRY - app.js loads router V9.5 + footer V12 + topbar + player -->
 <script type="module" src="/src/core/app.js"></script>
-<script src="https://unpkg.com/wavesurfer.js"></script>
+
+<script>
+  // Show page after app.js loaded
+  window.addEventListener('load', ()=> document.documentElement.classList.add('loaded'));
+  setTimeout(()=> document.documentElement.classList.add('loaded'), 1500);
+</script>
 
 </body>
 </html>
