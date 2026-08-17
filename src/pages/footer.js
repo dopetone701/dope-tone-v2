@@ -1,5 +1,4 @@
-// src/pages/footer.js - V12 FOOTER - FIXED LINKS FOR V9.5 ROUTER + PERSISTENT
-
+// src/pages/footer.js - V12.1 FOOTER - FIXED LINKS FOR V9.5 ROUTER + PERSISTENT - SAMPLES=VAULT, LICENSE/MESSAGE/FAQ=HELP
 export function renderFooter(){
 
   const mountFooter = () => {
@@ -36,22 +35,22 @@ export function renderFooter(){
       <div class="col">
         <span>Explore</span>
         <a href="#/beats" data-link>Beats</a>
-        <a href="#/beats" data-link>Samples</a>
+        <a href="#/vault" data-link>Samples</a>
         <a href="#/beats" data-link>Trending</a>
       </div>
 
       <div class="col">
         <span>Support</span>
         <a href="#/help" data-link>Help</a>
-        <a href="#/tickets" data-link>Message</a>
-        <a href="#/license" data-link>License</a>
+        <a href="#/help" data-link data-scroll="ticketSection">Message</a>
+        <a href="#/help" data-link data-scroll="licenseSection">License</a>
       </div>
 
       <div class="col">
         <span>Legal</span>
         <a href="#/terms" data-link>Terms</a>
         <a href="#/privacy" data-link>Privacy</a>
-        <a href="#/faq" data-link>FAQ</a>
+        <a href="#/help" data-link data-scroll="faqSection">FAQ</a>
       </div>
 
       <div class="col">
@@ -93,6 +92,17 @@ export function renderFooter(){
 `;
 
     view.insertAdjacentHTML('beforeend', footerHTML);
+
+    // AUTO SCROLL FOR HELP SECTIONS - LICENSE/MESSAGE/FAQ -> HELP PAGE
+    view.querySelectorAll('a[data-scroll]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        const targetId = link.getAttribute('data-scroll');
+        setTimeout(() => {
+          const target = document.getElementById(targetId);
+          if(target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+      });
+    });
   };
 
   // INITIAL FOOTER

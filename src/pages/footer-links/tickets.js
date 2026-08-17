@@ -1,5 +1,4 @@
 // src/pages/footer-links/tickets.js - V9.5 - ROUTER READY - ONLY TICKET FORM
-import './help.css';
 
 const SUPPORT_API = 'https://vault-orders-api.dopetone701.workers.dev';
 const TICKETS_API = "https://support-tickets-api.dopetone701.workers.dev";

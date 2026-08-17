@@ -1,5 +1,4 @@
 // src/pages/footer-links/faq.js - V9.5 - ONLY FAQ - ROUTER READY
-import './help.css';
 
 export function renderFaq() {
   return `

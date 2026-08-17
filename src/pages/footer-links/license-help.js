@@ -1,6 +1,5 @@
 // src/pages/footer-links/license-help.js - V9.5 - IMPORTS YOUR REAL LICENCE.JS
 // This file just wraps your existing src/features/licence/licence.js so #/license works
-import '../../features/licence/licence.css';
 
 // Re-import your already updated master file
 import * as LicenceMaster from '../../features/licence/licence.js';
