@@ -295,10 +295,102 @@ aside, [class*="sidebar"], [id*="sidebar"]{
   z-index:1!important;
 }
 
-/* add bottom padding so content not hidden behind player */
-body, #app-view{
-  padding-bottom:78px!important;
+/* === PLAYER + FOOTER - 0 GAP - FOOTER HIDES UNDER PLAYER === */
+#player-bar{
+  position:fixed!important;
+  left:0!important; right:0!important; bottom:0!important;
+  width:100vw!important; max-width:100vw!important;
+  height:var(--player-h)!important;
+  z-index:2147483647!important;
+  isolation:isolate!important;
+  transform:translateZ(0)!important;
+  pointer-events:none!important;
+  border-radius:0!important;
 }
-@media(max-width:768px){
-  body, #app-view{ padding-bottom:68px!important; }
+.global-player{
+  position:relative!important;
+  z-index:2147483647!important;
+  pointer-events:auto!important;
+  transform:translateZ(0)!important;
+}
+
+/* REMOVE THE OLD PADDING THAT MADE FOOTER FLOAT */
+body, #app-view{
+  padding-bottom:0!important;
+}
+
+#app-view{
+  padding-bottom:0!important;
+  margin-bottom:0!important;
+}
+
+#dt-footer{
+  margin-bottom:0!important;
+  padding-bottom:0!important;
+  bottom:0!important;
+  transform:translateY(0)!important;
+  z-index:10!important;
+}
+
+
+/* === FOOTER SIT RIGHT AFTER PLAYER - FULLY VISIBLE - NOT HALF === */
+#app-view{
+  padding-bottom:86px!important; /* player height - pushes footer up */
+  box-sizing:border-box!important;
+}
+
+#dt-footer{
+  margin-bottom:0!important;
+  padding-bottom:12px!important;
+  position:relative!important;
+  bottom:auto!important;
+  z-index:5!important;
+  transform:none!important;
+  /* sit right after player - no gap, no overlap */
+  margin-top:auto!important;
+}
+
+#player-bar{
+  bottom:0!important;
+  height:86px!important;
+  z-index:20!important; /* lower than before, so footer sits ABOVE */
+}
+
+#app-shell{
+  padding-bottom:0!important;
+}
+
+/* === PLAYER ON TOP OF SIDEBARS - FINAL === */
+#app-shell{
+  position:relative!important;
+}
+
+#left-sidebar{
+  z-index:10!important;
+  padding-bottom:86px!important; /* stops before player */
+  box-sizing:border-box!important;
+}
+
+#right-sidebar{
+  z-index:10!important;
+  padding-bottom:86px!important;
+  box-sizing:border-box!important;
+}
+
+#player-bar{
+  position:fixed!important;
+  left:0!important;
+  right:0!important;
+  bottom:0!important;
+  width:100vw!important;
+  height:86px!important;
+  z-index:9999!important; /* ON TOP OF BOTH SIDEBARS */
+  background:var(--navy)!important;
+  border-top:1px solid var(--border)!important;
+  border-radius:0!important;
+}
+
+#app-view{
+  padding-bottom:86px!important;
+  z-index:1!important;
 }
