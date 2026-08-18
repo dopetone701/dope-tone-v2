@@ -704,16 +704,43 @@ function setupGridObserver() {
   gridObserver.observe(sentinel);
 }
 
+// PLACE 1 - PRO SEARCH BY mood genre type bpm name key
+function matchesBeat(beat, rawQ){
+  if(!rawQ) return true;
+  const q = String(rawQ.query || rawQ).toLowerCase().trim();
+  if(!q) return true;
+
+  const title = String(beat.title||'').toLowerCase();
+  const genre = String(beat.genre||'').toLowerCase();
+  const mood = String(beat.mood||'').toLowerCase();
+  const key = String(beat.key||'').toLowerCase();
+  const type = String(beat.type||beat.monetization_mode||'').toLowerCase();
+  const tags = (beat.tags_parsed||beat.tags||[]).join(' ').toLowerCase();
+  const bpmStr = String(beat.bpm||'');
+  const bpmNum = Number(beat.bpm||0);
+
+  // BPM parse from search
+  const bpmMatch = q.match(/(\d{2,3})\s*bpm/) || q.match(/\b(\d{2,3})\b/);
+  const searchBpm = bpmMatch? parseInt(bpmMatch[1]||bpmMatch[0]) : null;
+  if(searchBpm && Math.abs(bpmNum - searchBpm) > 3) return false;
+
+  const haystack = `${title} ${genre} ${mood} ${key} ${type} ${tags} ${bpmStr}`;
+  const words = q.replace(/\d+\s*bpm/g,'').split(/\s+/).filter(w=>w.length>1);
+  if(words.length===0) return true;
+  return words.every(w => haystack.includes(w));
+}
+
 function applyFilters() {
-  const q = currentSearch.trim().toLowerCase();
   filteredBeats = allBeats.filter(beat => {
     const genre = String(beat.genre || "").toLowerCase();
-    const text = [beat.title, beat.genre, beat.key, beat.mood, beat.bpm, Array.isArray(beat.tags)? beat.tags.join(" ") : beat.tags].map(v => String(v||"").toLowerCase()).join(" ");
-    return (!q || text.includes(q)) && (currentFilter === "all" || genre.includes(currentFilter));
+    const okGenre = (currentFilter === "all" || genre.includes(currentFilter));
+    const okSearch = matchesBeat(beat, currentSearch);
+    return okGenre && okSearch;
   });
   if (currentView === "grid") { setViewVisibility("grid"); renderGrid(true); return; }
   setViewVisibility("list"); renderList(true);
 }
+
 
 function setupToggle() {
   const listBtn = document.getElementById("beatsListBtn");
@@ -848,15 +875,39 @@ function renderGenreDropdown(genres) {
 }
 function toggleGenreDropdown() { if (!genreDropdown) return; genreDropdown.classList.toggle("open"); }
 
+// PLACE 2 - LISTEN TO TOPBAR SEARCH FROM ANY PAGE
 function setupSearch() {
   const input = getSearchInput();
-  if (!input) return;
-  let timeout;
-  input.oninput = e => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => { currentSearch = e.target.value || ""; applyFilters(); }, 180);
-  };
+  if (input) {
+    let timeout;
+    input.oninput = e => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => { currentSearch = e.target.value || ""; applyFilters(); }, 180);
+    };
+  }
+
+  // LISTEN TO GLOBAL TOPBAR
+  window.addEventListener('search:query', (e) => {
+    const data = e.detail;
+    // support both old string and new object
+    currentSearch = data?.query?? data?? "";
+    if(typeof data === 'object' && data.query) currentSearch = data;
+    applyFilters();
+
+    // fill local input if exists
+    const local = getSearchInput();
+    if(local && data?.raw) local.value = data.raw;
+    else if(local && typeof data === 'string') local.value = data;
+  });
+
+  // restore last search
+  const last = localStorage.getItem('dt_last_search');
+  if(last){
+    currentSearch = last;
+    setTimeout(()=> applyFilters(), 400);
+  }
 }
+
 
 function setupPlayerSync() {
   const PLAY = PLAY_SVG; const PAUSE = PAUSE_SVG;

@@ -330,9 +330,33 @@ export function initTopbar(){
 
     </div>
 
-    <div class="top-center">
-      <input id="globalSearch" placeholder="Search beats..." />
+       <div class="top-center" style="position:relative;">
+      <!-- TRAP CHROME PASSWORD MANAGER -->
+      <input type="text" style="display:none!important" autocomplete="username">
+      <input type="password" style="display:none!important" autocomplete="new-password">
+
+      <input id="globalSearch"
+        type="search"
+        name="dt-beats-search-xyz"
+        autocomplete="dt-do-not-autofill"
+        data-form-type="search"
+        data-lpignore="true"
+        data-1p-ignore="true"
+        data-bwignore="true"
+        readonly
+        onfocus="this.removeAttribute('readonly')"
+        spellcheck="false"
+        placeholder="Search beats..." />
+
+      <div id="searchPanel" style="display:none; position:absolute; top:44px; left:0; right:0; width:320px; background:linear-gradient(180deg,#0F2446 0%,#050A14 100%); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:8px; z-index:99999; box-shadow:0 20px 60px rgba(0,0,0,0.8); backdrop-filter:blur(20px);">
+        <div style="font-size:10px; letter-spacing:1.5px; color:#6B7280; padding:6px 8px; font-weight:700;">RECENT SEARCHES</div>
+        <div id="recentList"></div>
+        <div style="height:1px; background:rgba(255,255,255,0.08); margin:8px 0;"></div>
+        <div style="font-size:10px; letter-spacing:1.5px; color:#6B7280; padding:6px 8px; font-weight:700;">SUGGESTED</div>
+        <div id="suggestList"></div>
+      </div>
     </div>
+
 
     <div class="auth-buttons">
       <button type="button" class="nav-icon-btn mobile-cart" id="mobileCartBtn">🛒<span class="cart-count" data-cart-count>0</span></button>
@@ -456,9 +480,105 @@ document.addEventListener('click', (e)=>{
 });
 
 
-  document.getElementById('globalSearch')?.addEventListener('input', e => {
-    window.dispatchEvent(new CustomEvent('search:query',{detail:e.target.value.toLowerCase()}));
-  });
+   const searchInput = document.getElementById('globalSearch');
+  const searchPanel = document.getElementById('searchPanel');
+  const recentList = document.getElementById('recentList');
+  const suggestList = document.getElementById('suggestList');
+
+  if(searchInput){
+    let hasNavigated = false;
+
+    // KILL EMAIL AUTOFILL ON LOAD
+    searchInput.value = '';
+    if(searchInput.value.includes('@')) searchInput.value = '';
+
+    const getRecents = () => {
+      try{ return JSON.parse(localStorage.getItem('dt_recent_searches')||'[]'); }catch{ return []; }
+    };
+    const saveRecent = (term) => {
+      if(!term || term.includes('@') || term.length < 2) return;
+      let recents = getRecents().filter(t => t.toLowerCase()!== term.toLowerCase());
+      recents.unshift(term);
+      recents = recents.slice(0,2);
+      localStorage.setItem('dt_recent_searches', JSON.stringify(recents));
+    };
+
+    const renderPanel = () => {
+      const recents = getRecents();
+      const beats = window.__BEATS__ || [];
+      const genres = [...new Set(beats.map(b=>b.genre).filter(Boolean))].slice(0,1);
+      const moods = [...new Set(beats.map(b=>b.mood).filter(Boolean))].slice(0,1);
+
+      recentList.innerHTML = recents.length? recents.map(r=>`
+        <button class="search-suggest-btn" data-term="${r.replace(/"/g,'&quot;')}" style="width:100%; text-align:left; padding:8px 10px; border-radius:8px; border:0; background:transparent; color:#E5E7EB; cursor:pointer; font-size:12px;">🕘 ${r}</button>
+      `).join('') : `<div style="padding:6px 10px; color:#6B7280; font-size:11px;">No recent searches</div>`;
+
+      suggestList.innerHTML = `
+        ${genres.map(g=>`<button class="search-suggest-btn" data-term="${g}" style="width:100%; text-align:left; padding:8px 10px; border-radius:8px; border:0; background:transparent; color:#9CA3AF; cursor:pointer; font-size:12px;">🎧 ${g}</button>`).join('')}
+        ${moods.map(m=>`<button class="search-suggest-btn" data-term="${m}" style="width:100%; text-align:left; padding:8px 10px; border-radius:8px; border:0; background:transparent; color:#9CA3AF; cursor:pointer; font-size:12px;">💿 ${m}</button>`).join('')}
+        <button class="search-suggest-btn" data-term="140 BPM" style="width:100%; text-align:left; padding:8px 10px; border-radius:8px; border:0; background:transparent; color:#9CA3AF; cursor:pointer; font-size:12px;">⏱ 140 BPM</button>
+      `;
+
+      recentList.querySelectorAll('.search-suggest-btn').forEach(b=> b.onclick = () => pickSuggest(b.dataset.term));
+      suggestList.querySelectorAll('.search-suggest-btn').forEach(b=> b.onclick = () => pickSuggest(b.dataset.term));
+    };
+
+    const pickSuggest = (term) => {
+      searchInput.value = term;
+      doSearch({target: searchInput});
+      searchPanel.style.display = 'none';
+    };
+
+    const doSearch = (e) => {
+      const raw = e.target.value.trim();
+      if(raw.includes('@')){ e.target.value=''; return; } // BLOCK EMAIL
+      const q = raw.toLowerCase();
+
+      if(q.length > 0 &&!hasNavigated){
+        hasNavigated = true;
+        if(!location.hash.includes('beats')){
+          location.hash = '#/beats';
+        }
+      }
+      if(q.length === 0) hasNavigated = false;
+
+      localStorage.setItem('dt_last_search', raw);
+      if(q.length >= 2) saveRecent(raw);
+
+      const searchObj = {
+        query: q,
+        raw: raw,
+        bpm: (q.match(/(\d{2,3})\s*bpm/)?.[1] || q.match(/\b(\d{2,3})\b/)?.[1])? parseInt(q.match(/(\d{2,3})\s*bpm/)?.[1] || q.match(/\b(\d{2,3})\b/)?.[1]) : null,
+        key: (raw.match(/\b([A-G][#b]?\s*(?:maj|min|minor|major|m)?)\b/i)?.[0] || '').toLowerCase()
+      };
+
+      window.dispatchEvent(new CustomEvent('search:query',{detail: searchObj}));
+    };
+
+    searchInput.addEventListener('input', doSearch);
+    searchInput.addEventListener('focus', () => {
+      if(searchInput.value.includes('@')) searchInput.value = '';
+      renderPanel();
+      searchPanel.style.display = 'block';
+      if(searchInput.value.trim() &&!hasNavigated){
+        if(!location.hash.includes('beats')) location.hash = '#/beats';
+      }
+    });
+       searchInput.addEventListener('blur', () => {
+      setTimeout(()=> searchPanel.style.display = 'none', 180);
+    });
+    searchInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        searchPanel.style.display = 'none';
+        searchInput.blur();
+        doSearch({target: searchInput});
+      }
+    });
+
+  }
+
+
 
    // SURGICAL HASH ROUTER FIX
   document.querySelectorAll('[data-route]').forEach(a => {

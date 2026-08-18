@@ -284,8 +284,25 @@ export async function initVaultPage(){
     }
   });
 
+   // SURGICAL - VAULT OBEYS GLOBAL SEARCH BAR
+  if(!window._vaultSearchBound){
+    window._vaultSearchBound = true;
+    window.addEventListener('search:query', (e)=>{
+      const data = e.detail;
+      const q = (typeof data === 'string'? data : data?.query || data?.raw || '').toLowerCase().trim();
+      if(q.length > 0){
+        // only if we are still on vault page
+        if(location.hash.includes('vault')){
+          location.hash = '#/beats';
+          localStorage.setItem('dt_last_search', typeof data === 'string'? data : data?.raw || q);
+        }
+      }
+    });
+  }
+
   document.documentElement.style.overflowX = "hidden";
   document.body.style.overflowX = "hidden";
 }
+
 
 export default { renderVaultPage, initVaultPage };

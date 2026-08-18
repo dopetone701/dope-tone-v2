@@ -186,10 +186,11 @@ export function renderFooter(){
 
     <div class="dt-footer-right">
       <span style="${isSubscribed?'font-size:12px;opacity:1;text-transform:uppercase;':''}">${initialLabel}</span>
-      <div class="vault-join">
-        <input id="vault-email" placeholder="${initialPlaceholder}" autocomplete="email" ${isSubscribed?'disabled style="border:1px solid #00ff9d"':''}>
+           <form class="vault-join" autocomplete="on" onsubmit="return false;" data-form-type="newsletter">
+        <input id="vault-email" type="email" name="newsletter-email" autocomplete="email" inputmode="email" data-form-type="other" placeholder="${initialPlaceholder}" ${isSubscribed?'disabled style="border:1px solid #00ff9d"':''}>
         <button id="vault-join-btn" type="button" ${isSubscribed?'style="opacity:0.3;pointer-events:none"':''}>→</button>
-      </div>
+      </form>
+
       <div id="vault-terms" style="display:none; align-items:center; gap:6px; margin-top:8px; font-size:10px; color:#fff;">
         <input type="checkbox" id="vault-agree-check" style="width:12px; height:12px; accent-color:#fff;">
         <label for="vault-agree-check" style="cursor:pointer;">I agree to <a href="#/terms" data-link id="vault-terms-link" style="text-decoration:underline;color:#fff;text-underline-offset:3px;font-weight:600;">Terms</a></label>
