@@ -265,9 +265,3 @@ button[class*="capsule"] {
 }
 
 
-@media(max-width:768px){
-  .wave-bar{display:none!important;}
-  .wave-row{padding:10px 12px!important;min-height:60px!important;gap:10px!important}
-  .wave-left{flex:0 0 46px!important}
-  .wave-cover-wrap{width:46px!important;height:46px!important}
-}
