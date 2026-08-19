@@ -59,3 +59,9 @@
     backdrop-filter:none !important;
   }
 }
+
+
+body #sidebar-overlay#sidebar-overlay{ z-index:44!important; }
+body #sidebar-overlay.active{ z-index:44!important; }
+body #left-sidebar#left-sidebar{ z-index:50!important; }
+body #left-sidebar.open{ z-index:50!important; }

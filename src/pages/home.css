@@ -69,3 +69,159 @@
 }
 
 
+/* ============================================================
+   HOME NTG MOBILE CONTAINMENT FIX
+   ============================================================ */
+
+#homeSmartWrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+
+#homeSmartWrap .ntg-shell {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+#homeSmartWrap .ntg-card {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+#homeSmartWrap .trending-grid-v2 {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 600px) {
+  #homeSmartWrap .ntg-shell {
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.7fr) !important;
+    gap: 8px !important;
+  }
+
+  #homeSmartWrap .ntg-card {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+
+@media (max-width: 600px) {
+
+  /* Remove outer visual container on mobile */
+  #homeSmartWrap {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  #homeSmartWrap .arsenal-full,
+  #homeSmartWrap .ntg-shell {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Keep the actual cards */
+  #homeSmartWrap .ntg-card {
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+  }
+}
+
+
+/* ============================================================
+   MOBILE HOME ORDER
+   ARSENAL → TRENDING → NOTICE BOARD
+   ============================================================ */
+
+@media (max-width: 600px) {
+
+  #homeSmartWrap {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  /* 1. ARSENAL */
+  #homeSmartWrap .arsenal-full {
+    order: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 2. TRENDING + NOTICE wrapper */
+  #homeSmartWrap .ntg-shell {
+    order: 2 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 12px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 3. TRENDING */
+  #homeSmartWrap .ntg-shell .ntg-card:nth-child(1) {
+    order: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 4. NOTICE BOARD */
+  #homeSmartWrap .ntg-shell .ntg-card:nth-child(2) {
+    order: 2 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Prevent inner content from creating horizontal overflow */
+  #homeSmartWrap .trending-grid-v2,
+  #homeSmartWrap #dtDropsWrap,
+  #homeSmartWrap #dtChatWrap,
+  #homeSmartWrap #dtRecommendWrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+}

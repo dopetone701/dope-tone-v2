@@ -1,5 +1,5 @@
 // ===============================
-// FEATURED - FIXED FOR DTPlayer - BUY = LICENCE POPUP
+// FEATURED - FIXED FOR DTPlayer - BUY = LICENCE POPUP + MOBILE SWIPE
 // ===============================
 const PLAY_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>`;
 const PAUSE_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
@@ -119,7 +119,6 @@ export function renderFeatured(){
     buyBtn.onclick = async e=>{
       e.stopPropagation();
       if(getMode(beat)==='free'){ await proDownload(beat, buyBtn); return; }
-      // OPEN LICENCE POPUP - NOT REDIRECT
       const mod = await import("../licence/licence.js");
       mod.openLicencePopup(beat, beat.selected_licence||'basic');
     };
@@ -184,6 +183,56 @@ export function renderFeatured(){
       if(p<1) requestAnimationFrame(tick); else {current=(t+len)%len; update(); syncUI();}
     }; requestAnimationFrame(tick);
   }
+
+  // === MOBILE SWIPE LOGIC ===
+  let startX=0, startY=0, isDragging=false, startCurrent=0;
+  root.style.touchAction='pan-y';
+  root.addEventListener('touchstart', e=>{
+    if(e.touches.length!==1) return;
+    startX=e.touches[0].clientX;
+    startY=e.touches[0].clientY;
+    startCurrent=current;
+    isDragging=true;
+  },{passive:true});
+  root.addEventListener('touchmove', e=>{
+    if(!isDragging) return;
+    const dx=e.touches[0].clientX-startX;
+    const dy=e.touches[0].clientY-startY;
+    if(Math.abs(dx)>Math.abs(dy)){
+      e.preventDefault();
+      current=startCurrent - dx/120; // drag sensitivity
+      update();
+    }
+  },{passive:false});
+  root.addEventListener('touchend', e=>{
+    if(!isDragging) return;
+    isDragging=false;
+    const dx=(e.changedTouches[0]?.clientX||0)-startX;
+    if(Math.abs(dx)>50){
+      if(dx<0) animateTo(Math.round(current+1));
+      else animateTo(Math.round(current-1));
+    } else {
+      animateTo(Math.round(current));
+    }
+  },{passive:true});
+  // desktop drag
+  root.addEventListener('mousedown', e=>{
+    startX=e.clientX; startCurrent=current; isDragging=true; root.style.cursor='grabbing';
+  });
+  window.addEventListener('mousemove', e=>{
+    if(!isDragging) return;
+    const dx=e.clientX-startX;
+    if(Math.abs(dx)>10){ current=startCurrent - dx/120; update(); }
+  });
+  window.addEventListener('mouseup', e=>{
+    if(!isDragging) return;
+    isDragging=false; root.style.cursor='grab';
+    const dx=e.clientX-startX;
+    if(Math.abs(dx)>50){
+      if(dx<0) animateTo(Math.round(current+1));
+      else animateTo(Math.round(current-1));
+    } else animateTo(Math.round(current));
+  });
 
   window.__featuredPlayHandler = e => {
     const newId = String(window.__CURRENT_BEAT__?.id || '');

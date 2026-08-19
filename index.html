@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DOPE TONE VAULT V2</title>
 
-<!-- V12 FINAL FIX - ONE HTML SPA - Kills beats#/#/beats loop + keeps cart safe -->
+<!-- V13 FINAL - Kills beats#/#/beats loop + drawer blur fix -->
 <script>
   (function(){
     try {
@@ -21,10 +21,9 @@
         last = last.split("?")[0].split("#")[0] || "/home";
         last = last.replace(/\/+/g, "/").replace(/\/+$/, "") || "/home";
         var finalUrl = "/#" + last.replace(/^\//, "");
-        console.log("[V12 FIX] BAD URL:", full, "->", finalUrl);
+        console.log("[V13 FIX] BAD URL:", full, "->", finalUrl);
         location.replace(finalUrl);
       }
-      // If no hash at all, go home
       if(!location.hash || location.hash === "#"){
         history.replaceState(null, "", "#/home");
       }
@@ -46,6 +45,16 @@
   #app-shell{min-height:100vh;display:flex;flex-direction:column;background:#050A14}
   #main-row{flex:1;display:flex}
   #app-view{flex:1;min-height:60vh}
+
+  /* MISSING OVERLAYS - CRITICAL FOR MOBILE */
+  #sidebar-overlay{
+    position:fixed;inset:0;z-index:10001;
+    background:rgba(5,10,20,0.55);
+    backdrop-filter:blur(10px);
+    opacity:0;pointer-events:none;
+    transition:opacity.3s ease;
+  }
+  #sidebar-overlay.active{opacity:1;pointer-events:auto;}
 </style>
 </head>
 <body>
@@ -55,7 +64,6 @@
   <div id="main-row">
     <div id="left-sidebar"></div>
     <div id="app-view">
-      <!-- Router injects here - all pages: home, beats, cart, about, help, faq, license, etc -->
       <div style="padding:60px;text-align:center;color:#9CA3AF;font-family:system-ui">Loading DOPE TONE VAULT...</div>
     </div>
     <div id="right-sidebar"></div>
@@ -63,11 +71,15 @@
   <div id="player-bar"></div>
 </div>
 
-<!-- ONE ENTRY - app.js loads router V9.5 + footer V12 + topbar + player -->
+<!-- MISSING DIVS - THE FIX -->
+<div id="sidebar-overlay"></div>
+<div id="navOverlay" class="overlay"></div>
+<div id="navPanel" class="mobile-panel"></div>
+<div id="userPanel"></div>
+
 <script type="module" src="/src/core/app.js"></script>
 
 <script>
-  // Show page after app.js loaded
   window.addEventListener('load', ()=> document.documentElement.classList.add('loaded'));
   setTimeout(()=> document.documentElement.classList.add('loaded'), 1500);
 </script>

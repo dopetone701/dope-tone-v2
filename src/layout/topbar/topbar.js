@@ -2,11 +2,13 @@ export function initTopbar(){
   const el = document.getElementById('topbar');
   if(!el) return;
 
+   document.getElementById('sidebar-overlay')?.removeAttribute('style');
   document.getElementById('sidebar-overlay')?.classList.remove('active');
   document.getElementById('navOverlay')?.classList.remove('active');
   document.getElementById('navPanel')?.classList.remove('active');
   document.getElementById('main-row')?.classList.remove('sidebar-open');
-  document.body.classList.remove('panel-open','menu-open');
+  document.body.classList.remove('panel-open','menu-open','sidebar-drawer-open');
+
 
   el.innerHTML = `
   <style>
@@ -304,6 +306,12 @@ export function initTopbar(){
     }
     #userPanel button:hover{ background:rgba(255,255,255,.1); color:#fff; }
 
+    body #sidebar-overlay#sidebar-overlay{ z-index:44!important; }
+body #sidebar-overlay.active{ z-index:44!important; }
+body #left-sidebar#left-sidebar{ z-index:50!important; }
+body #left-sidebar.open{ z-index:50!important; }
+
+
   </style>
 
   <div class="top-inner">
@@ -402,21 +410,35 @@ export function initTopbar(){
   const left = document.getElementById('left-sidebar');
   const right = document.getElementById('right-sidebar');
   const mainRow = document.getElementById('main-row');
-  let overlayShell = document.getElementById('sidebar-overlay');
+    let overlayShell = document.getElementById('sidebar-overlay');
   if(!overlayShell){
     overlayShell = document.createElement('div');
     overlayShell.id = 'sidebar-overlay';
-    overlayShell.style.cssText = 'position:fixed;inset:0;z-index:900;background:rgba(5,10,20,0.6);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:.3s;';
     document.body.appendChild(overlayShell);
+  } else {
+    overlayShell.removeAttribute('style');
   }
 
-  document.getElementById('leftToggle').onclick = () => {
+  const closeMobileDrawer = () => {
+    left?.classList.remove('open');
+    overlayShell?.classList.remove('active');
+    mainRow?.classList.remove('sidebar-open');
+    document.body.classList.remove('sidebar-drawer-open');
+  };
+  const openMobileDrawer = () => {
+    left?.classList.add('open');
+    overlayShell?.classList.add('active');
+    mainRow?.classList.add('sidebar-open');
+    document.body.classList.add('sidebar-drawer-open');
+  };
+
+
+    document.getElementById('leftToggle').onclick = () => {
     if(window.innerWidth <= 1024){
-      const isOpen = left.classList.toggle('open');
-      overlayShell.style.opacity = isOpen ? '1' : '0';
-      overlayShell.style.pointerEvents = isOpen ? 'auto' : 'none';
-      mainRow?.classList.toggle('sidebar-open', isOpen);
+      if(left.classList.contains('open')) closeMobileDrawer();
+      else openMobileDrawer();
     } else {
+
       left.classList.toggle('collapsed');
       localStorage.setItem('dt_left', left.classList.contains('collapsed'));
       window.dispatchEvent(new CustomEvent('leftCollapsed',{detail:left.classList.contains('collapsed')}));
@@ -430,12 +452,9 @@ export function initTopbar(){
     }
   };
 
-  overlayShell.onclick = () => {
-    left.classList.remove('open');
-    overlayShell.style.opacity = '0';
-    overlayShell.style.pointerEvents = 'none';
-    mainRow?.classList.remove('sidebar-open');
-  };
+    overlayShell.onclick = closeMobileDrawer;
+
+
 
   const navOverlay = document.getElementById('navOverlay');
 const navPanel = document.getElementById('navPanel');
@@ -592,17 +611,17 @@ document.addEventListener('click', (e)=>{
   });
 
 
-  const checkMobile = () => {
+   const checkMobile = () => {
     const rb = document.getElementById('rightToggle');
-    if(rb) rb.style.display = window.innerWidth <= 1024 ? 'none' : 'flex';
+    if(rb) rb.style.display = window.innerWidth <= 1024? 'none' : 'flex';
     if(window.innerWidth > 1024){
-      left.classList.remove('open');
-      overlayShell.style.opacity = '0';
-      overlayShell.style.pointerEvents = 'none';
-      mainRow?.classList.remove('sidebar-open');
-      closeNav();
+      closeMobileDrawer();
+      document.getElementById('navPanel')?.classList.remove('active');
+      document.getElementById('navOverlay')?.classList.remove('active');
+      document.body.classList.remove('panel-open');
     }
   };
+
   checkMobile();
   window.addEventListener('resize', checkMobile);
 

@@ -72,7 +72,9 @@ export function initLeft(){
       <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg, #60B5FF 0%, #1E90FF 50%, #0A1931 100%);border:1px solid rgba(229,231,235,0.18);display:grid;place-items:center;color:white;font-weight:800;font-size:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 12px rgba(0,0,0,0.4)">E</div>
       <div style="overflow:hidden;flex:1"><div style="font-size:12px;font-weight:700;color:#FFFFFF;white-space:nowrap">Emma Prince</div><div style="font-size:10px;color:#9CA3AF">Pro • 124 beats</div></div>
     </div>
-  </div>`;
+  </div>
+  
+  `;
 
   var selector = el.querySelector('#nav-selector');
   var bar = el.querySelector('#nav-selector-bar');

@@ -1035,6 +1035,26 @@ function injectGenreStyles(){
 .wave-bar wave{width:100%!important;}
 .wave-bar:hover{filter:brightness(1.2)!important}
 
+#gridContainer{width:100%!important;box-sizing:border-box!important;grid-template-columns:repeat(auto-fill, minmax(210px, 1fr))!important;gap:18px!important;}
+@media(max-width:768px){
+  #gridContainer{grid-template-columns:repeat(3, minmax(0,1fr))!important;gap:8px!important;padding:8px!important;}
+  .arsenal-grid-card .f-content{padding:6px!important}
+  .arsenal-grid-card .f-title{font-size:11px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  .arsenal-grid-card .f-meta{font-size:9px!important}
+  .arsenal-grid-card .f-price{font-size:11px!important}
+  .arsenal-grid-card .f-buy{height:26px!important;font-size:10px!important}
+  .arsenal-grid-card .f-cover-wrap{aspect-ratio:1/1!important}
+}
+
+
+/* REDUCED RADIUS - FIX */
+.wave-row{border-radius:8px!important;}
+.arsenal-grid-card{border-radius:8px!important;overflow:hidden!important}
+.f-cover-wrap{border-radius:8px 8px 0 0!important}
+.f-content{border-radius:0 0 8px 8px!important}
+.wave-dots{border-radius:6px!important}
+.f-buy{border-radius:6px!important}
+.dt-row-menu{border-radius:8px!important}
 
 
 `;

@@ -10,7 +10,12 @@ export function renderGridView(beats, deps = {}){
 
   grid.hidden=false;
   grid.style.display="grid";
-  grid.style.gridTemplateColumns="repeat(auto-fill, minmax(210px, 1fr))";
+// NEW - 3 cards on mobile
+const isMobile = window.innerWidth <= 768;
+grid.style.gridTemplateColumns = isMobile 
+  ? "repeat(3, 1fr)" 
+  : "repeat(auto-fill, minmax(210px, 1fr))";
+grid.style.gap = isMobile ? "8px" : "18px";
   grid.style.gap="18px";
   grid.innerHTML="";
 
