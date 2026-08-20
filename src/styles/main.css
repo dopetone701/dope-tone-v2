@@ -8,6 +8,7 @@
 @import url('../features/home/latest.v2.css');
 @import url('../features/home/arsenal.css');
 @import url('../features/home/trending-pro-v2.css');
+@import url('../features/similar/similar-tracks.css');
 @import url('../features/home/notice-board.css');
 @import url('../pages/home.css');
 @import url('../pages/footer.css');
@@ -70,3 +71,4 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--void);color:va
 .view-toggle,.home-preview .view-toggle,#home .view-toggle {margin-top:22px!important;margin-bottom:18px!important;padding-top:14px!important;border-top:1px solid rgba(255,255,255,0.06)!important;}
 #dt-footer{margin-bottom:0!important;padding-bottom:12px!important;position:relative!important;bottom:auto!important;z-index:5!important;transform:none!important;margin-top:auto!important;}
 @media(max-width:768px){.wave-bar{display:none!important;}.wave-row{padding:10px 12px!important;min-height:60px!important;gap:10px!important}.wave-left{flex:0 0 46px!important}.wave-cover-wrap{width:46px!important;height:46px!important}}
+
