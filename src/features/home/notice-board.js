@@ -304,3 +304,4 @@ export function initNoticeBoard(){
   }catch(e){ console.error('notice init fail', e); }
 }
 window.initNoticeBoard = initNoticeBoard;
+

@@ -210,3 +210,4 @@ export function renderTrending(){
   document.addEventListener("playerPause", _onPlayerPause);
   document.addEventListener("playerEnded", _onPlayerEnded);
 }
+

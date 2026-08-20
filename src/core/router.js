@@ -217,3 +217,4 @@ window.Router = Router;
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => Router.init(), { once: true });
 } else Router.init();
+

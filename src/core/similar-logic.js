@@ -182,3 +182,4 @@ document.addEventListener('playerPlay', ()=>setTimeout(syncSimilar,30));
 document.addEventListener('playerPause', ()=>setTimeout(syncSimilar,30));
 document.addEventListener('trackChange', ()=>setTimeout(syncSimilar,30));
 document.addEventListener('dt:listSwitch', ()=>setTimeout(syncSimilar,30));
+

@@ -379,3 +379,4 @@ window.initAuth = () => window.Auth?.init();
 window.refreshCartUI = () => { window.Auth?.updateCartCount(); window.dispatchEvent(new Event('cartUpdated')); };
 window.getCurrentUserId = () => window.Auth?._user?.id || localStorage.getItem('dopetone_user_id') || localStorage.getItem('dt_anon_id') || 'anonymous';
 export { AuthManagerV2 };
+

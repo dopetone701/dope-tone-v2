@@ -740,7 +740,7 @@ window.player = window.globalPlayer;
 // PLAYER BAR
 // ============================================================
 
-export function initPlayerBar(){
+export function initplayerbar(){
 
   initPlayerEngine();
 
@@ -1400,3 +1400,4 @@ window.DTPlayTrack =
 // ============================================================
 
 initPlayerEngine();
+

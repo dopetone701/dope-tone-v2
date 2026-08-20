@@ -112,3 +112,4 @@ export function initNoticeTrendingGrid(){
     ro.observe(shell);
   }
 }
+

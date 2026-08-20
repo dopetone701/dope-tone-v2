@@ -228,3 +228,4 @@ export function renderSimilarTracks(seedBeats, mountId = 'similarMount') {
     more.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); goBeats(); } });
   }
 }
+

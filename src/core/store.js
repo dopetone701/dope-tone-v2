@@ -1,1 +1,2 @@
 export const store={player:{current:null,queue:[],index:0,isPlaying:false},beats:[],filteredBeats:[],loaded:false,overview:{},set(p){Object.assign(this,p);window.dispatchEvent(new CustomEvent('store:change',{detail:p}))},setPlayer(p){Object.assign(this.player,p);window.dispatchEvent(new CustomEvent('player:change',{detail:this.player}))}};window.DTStore=store;window.store=store;
+

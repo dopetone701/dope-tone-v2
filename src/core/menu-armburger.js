@@ -167,3 +167,4 @@ export function createDotsMenu(beat, handlers){
   return wrap;
 }
 document.addEventListener("click",e=>{ if(!e.target.closest(".dt-dots-wrap")&&!e.target.closest(".pyramid-dots-wrap")) closeAllMenus(); });
+
