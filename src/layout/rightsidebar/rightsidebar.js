@@ -1,4 +1,4 @@
-﻿export function initRight(force = false){
+export function initRight(force = false){
   const isCC = (location.hash||'').startsWith('#/cc/');
   if(isCC &&!force) return; // Don't render queue when CC is open - unless forced
   const el=document.getElementById('right-sidebar');
@@ -52,7 +52,6 @@
   function getCurrentId(){
     return String(window.__CURRENT_BEAT__?.id || window.DTPlayer?.queue?.[window.DTPlayer?.index]?.id || '');
   }
-  
 
   function renderQueue(){
     const q=window.DTPlayer?.queue||[];

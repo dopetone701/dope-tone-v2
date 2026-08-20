@@ -8,7 +8,7 @@
   max-width:100vw!important;
   z-index:10003!important; 
   pointer-events:none!important; 
-} 
+}
 .global-player{
   pointer-events:auto!important;
   width:100%!important;

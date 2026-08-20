@@ -11,7 +11,7 @@ const LS_LIKES = 'dopetone_likes';
 const STATS_API = 'https://dopetone-stats.dopetone701.workers.dev';
 let playedBeats = new Set();
 function logBeatEvent(id, type){ if(!id) return; const a=getAnon(); fetch(`${STATS_API}/api/stats/event`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({beatId:parseInt(id),eventType:type, anon_id:a, user_key:a, user_id:a})}).catch(()=>{}) }
- 
+
 const AUDIO_CACHE = 'dt-audio-v1';
 
 let audio = null;

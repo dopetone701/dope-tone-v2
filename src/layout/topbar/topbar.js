@@ -292,7 +292,7 @@ export function initTopbar(){
       border-radius:999px; display:grid; place-items:center; border:1.5px solid #0A1931;
     }
     /* PRO DROPDOWN */
-    #userPanel{ 
+    #userPanel{
       position:absolute; top:58px; right:0; width:300px; z-index:9999;
       background:linear-gradient(180deg, rgba(15,36,70,0.97), rgba(5,10,20,0.98));
       backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.12);

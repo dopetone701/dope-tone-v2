@@ -1,0 +1,1316 @@
+/* ============================================================
+   DOPE TONE VAULT
+   RESPONSIVE SPACESHIP VAULT
+   FIXED:
+   - Images
+   - Mobile overflow
+   - Responsive category tabs
+   - Beats / Packs / Samples / Free Tools
+   - Small screen compression
+   ============================================================ */
+
+#vaultMount{
+  width:100% !important;
+  max-width:100% !important;
+  display:block !important;
+  box-sizing:border-box !important;
+  overflow-x:hidden !important;
+}
+
+*,
+*::before,
+*::after{
+  box-sizing:border-box;
+}
+
+/* ============================================================
+   VAULT ROOT
+   ============================================================ */
+
+.vault-root{
+  width:100% !important;
+  max-width:1400px !important;
+  margin:0 auto !important;
+
+  background-color:#050A14;
+
+  /* FIXED IMAGE PATH */
+  background-image:
+    radial-gradient(
+      ellipse at 20% 10%,
+      rgba(30,144,255,0.12) 0%,
+      transparent 40%
+    ),
+    radial-gradient(
+      ellipse at 80% 90%,
+      rgba(255,30,60,0.08) 0%,
+      transparent 40%
+    ),
+    url('/api/public/images/blackout.png');
+
+  background-size:cover;
+  background-position:center;
+  background-attachment:fixed;
+
+  min-height:100vh;
+
+  padding:20px 20px 100px 20px !important;
+
+  overflow-x:hidden !important;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+.vault-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+  width:100%;
+  min-width:0;
+}
+
+.vault-title-only{
+  color:#fff;
+  font-family:Orbitron,sans-serif;
+  font-size:28px;
+  font-weight:900;
+  letter-spacing:4px;
+  margin:0;
+  text-shadow:0 0 20px rgba(30,144,255,0.5);
+}
+
+.vault-back{
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.15);
+  color:#fff;
+  padding:8px 18px;
+  border-radius:999px;
+  font-size:12px;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.vault-back:hover{
+  background:rgba(255,30,60,0.2);
+  border-color:#FF1E3C;
+}
+
+/* ============================================================
+   HORIZONTAL TOGGLE / CATEGORY NAV
+   DESKTOP = 4 COLUMNS
+   TABLET = 2 COLUMNS
+   MOBILE = 2 COLUMNS
+   VERY SMALL = 2 COLUMNS
+   ============================================================ */
+
+.vault-tabs{
+  display:grid !important;
+
+  /*
+   * IMPORTANT:
+   * No horizontal overflow.
+   * Every category compresses to available width.
+   */
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+
+  gap:14px;
+
+  width:100% !important;
+  max-width:100% !important;
+
+  padding:10px 2px 24px 2px;
+
+  overflow:visible !important;
+
+  scrollbar-width:none;
+
+  box-sizing:border-box;
+}
+
+.vault-tabs::-webkit-scrollbar{
+  display:none;
+}
+
+/* ============================================================
+   CATEGORY TAB
+   ============================================================ */
+
+.vault-tab{
+  position:relative;
+
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+
+  height:110px;
+
+  background:rgba(10,25,49,0.78);
+
+  border:1px solid rgba(255,255,255,0.1);
+
+  border-radius:14px;
+
+  cursor:pointer;
+
+  padding:10px;
+
+  box-sizing:border-box;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+
+  overflow:hidden;
+}
+
+.vault-tab.active{
+  border-color:#FF1E3C;
+
+  box-shadow:
+    0 0 18px rgba(255,30,60,0.35),
+    inset 0 0 0 1px rgba(255,30,60,0.4);
+
+  background:rgba(10,25,49,0.95);
+
+  transform:translateY(-2px);
+}
+
+.vault-tab:hover{
+  border-color:rgba(30,144,255,0.5);
+}
+
+/* ============================================================
+   TAB IMAGE STACK
+   ============================================================ */
+
+.tab-bg-stack{
+  position:absolute;
+
+  top:10px;
+  left:10px;
+
+  width:60px;
+  height:60px;
+
+  z-index:1;
+
+  pointer-events:none;
+}
+
+.tab-bg-card{
+  position:absolute;
+
+  width:50px;
+  height:50px;
+
+  border-radius:8px;
+
+  background:#0A1931;
+
+  border:1px solid rgba(255,255,255,0.15);
+
+  overflow:hidden;
+}
+
+.tab-bg-card.card-3{
+  top:0;
+  left:8px;
+
+  opacity:0.4;
+
+  transform:rotate(-6deg);
+}
+
+.tab-bg-card.card-2{
+  top:2px;
+  left:4px;
+
+  opacity:0.6;
+
+  transform:rotate(-3deg);
+}
+
+.tab-bg-card.card-1{
+  top:4px;
+  left:0;
+
+  opacity:1;
+
+  overflow:hidden;
+}
+
+/* FIXED PHOTOS */
+
+.tab-bg-card.card-1 img{
+  display:block;
+
+  width:100% !important;
+  height:100% !important;
+
+  min-width:100% !important;
+  min-height:100% !important;
+
+  object-fit:cover !important;
+  object-position:center !important;
+
+  border:0;
+  margin:0;
+}
+
+/* LOCK OVER IMAGE */
+
+.tab-lock{
+  position:absolute;
+
+  inset:0;
+
+  display:grid;
+  place-items:center;
+
+  background:rgba(5,10,20,0.6);
+
+  font-size:10px;
+
+  z-index:5;
+}
+
+/* ============================================================
+   TAB TEXT
+   ============================================================ */
+
+.tab-content{
+  position:relative;
+
+  z-index:10;
+
+  margin-top:auto;
+
+  min-width:0;
+
+  max-width:100%;
+}
+
+.tab-title{
+  color:#fff;
+
+  font-family:Orbitron,sans-serif;
+
+  font-weight:800;
+
+  font-size:12px;
+
+  letter-spacing:1px;
+
+  white-space:nowrap;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+}
+
+.tab-sub{
+  color:#9CA3AF;
+
+  font-size:10px;
+
+  margin-top:2px;
+
+  white-space:nowrap;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+
+  max-width:100%;
+}
+
+.vault-tab.active .tab-title{
+  color:#FF1E3C;
+}
+
+/* ============================================================
+   GENERAL SECTIONS
+   ============================================================ */
+
+.vault-section{
+  width:100%;
+  max-width:100%;
+
+  box-sizing:border-box;
+
+  margin-top:8px;
+
+  overflow:hidden;
+}
+
+.section-head{
+  display:flex;
+
+  justify-content:space-between;
+  align-items:center;
+
+  margin-bottom:16px;
+
+  flex-wrap:wrap;
+
+  gap:10px;
+
+  width:100%;
+
+  min-width:0;
+}
+
+.section-head h2{
+  color:#fff;
+
+  font-family:Orbitron,sans-serif;
+
+  font-size:17px;
+
+  margin:0;
+
+  letter-spacing:1px;
+
+  min-width:0;
+}
+
+.view-all-btn{
+  background:#FF1E3C;
+
+  color:#fff;
+
+  border:0;
+
+  padding:8px 16px;
+
+  border-radius:999px;
+
+  font-weight:800;
+
+  font-size:11px;
+
+  cursor:pointer;
+
+  box-shadow:0 0 12px rgba(255,30,60,0.4);
+
+  white-space:nowrap;
+}
+
+.coming-badge{
+  background:rgba(5,10,20,0.8);
+
+  border:1px solid rgba(255,255,255,0.15);
+
+  color:#E5E7EB;
+
+  padding:6px 12px;
+
+  border-radius:999px;
+
+  font-size:10px;
+
+  font-weight:900;
+
+  white-space:nowrap;
+}
+
+/* ============================================================
+   BEATS
+   ============================================================ */
+
+.yt-music-grid{
+  display:grid !important;
+
+  grid-template-columns:
+    repeat(2,minmax(0,1fr)) !important;
+
+  gap:12px !important;
+
+  width:100% !important;
+  max-width:100% !important;
+
+  box-sizing:border-box !important;
+
+  min-width:0;
+}
+
+.yt-track{
+  display:flex !important;
+
+  align-items:center;
+
+  gap:12px;
+
+  background:rgba(10,25,49,0.7);
+
+  border:1px solid rgba(255,255,255,0.08);
+
+  border-radius:12px;
+
+  padding:10px 12px;
+
+  cursor:pointer;
+
+  min-width:0 !important;
+  max-width:100% !important;
+
+  box-sizing:border-box;
+
+  overflow:hidden;
+}
+
+.yt-track:hover{
+  border-color:rgba(255,30,60,0.4);
+
+  background:rgba(10,25,49,0.95);
+}
+
+.yt-track img{
+  width:52px !important;
+  height:52px !important;
+
+  min-width:52px !important;
+  min-height:52px !important;
+
+  border-radius:8px;
+
+  object-fit:cover !important;
+  object-position:center !important;
+
+  display:block;
+
+  flex-shrink:0;
+}
+
+.yt-meta{
+  flex:1;
+
+  min-width:0;
+
+  overflow:hidden;
+}
+
+.yt-title{
+  color:#fff;
+
+  font-size:13px;
+
+  font-weight:700;
+
+  white-space:nowrap;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+}
+
+.yt-artist{
+  color:#9CA3AF;
+
+  font-size:11px;
+
+  margin-top:2px;
+
+  white-space:nowrap;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+}
+
+.yt-menu{
+  color:#9CA3AF;
+
+  font-size:18px;
+
+  padding:0 6px;
+
+  flex-shrink:0;
+}
+
+/* ============================================================
+   PACKS
+   ============================================================ */
+
+.packs-preview-grid{
+  display:grid !important;
+
+  grid-template-columns:
+    repeat(3,minmax(0,1fr)) !important;
+
+  gap:16px !important;
+
+  width:100% !important;
+  max-width:100% !important;
+
+  box-sizing:border-box !important;
+
+  min-width:0;
+}
+
+.pack-preview-card{
+  position:relative;
+
+  width:100%;
+  max-width:100%;
+
+  height:380px;
+
+  background:#050A14;
+
+  border:1px solid rgba(255,255,255,0.1);
+
+  border-radius:16px;
+
+  overflow:hidden;
+
+  box-sizing:border-box;
+
+  min-width:0;
+}
+
+.pack-preview-card img{
+  position:absolute;
+
+  inset:0;
+
+  width:100% !important;
+  height:100% !important;
+
+  min-width:100%;
+  min-height:100%;
+
+  object-fit:cover !important;
+  object-position:center !important;
+
+  opacity:0.75;
+
+  display:block;
+}
+
+.pack-overlay{
+  position:absolute;
+
+  inset:0;
+
+  background:rgba(5,10,20,0.68);
+
+  display:grid;
+
+  place-items:center;
+
+  z-index:2;
+
+  backdrop-filter:blur(1px);
+
+  padding:15px;
+
+  text-align:center;
+}
+
+.pack-lock{
+  color:#FF1E3C;
+
+  font-weight:900;
+
+  text-align:center;
+
+  font-size:13px;
+
+  letter-spacing:1px;
+
+  line-height:1.3;
+
+  max-width:100%;
+}
+
+.pack-lock small{
+  color:#9CA3AF;
+
+  font-size:11px;
+
+  font-weight:600;
+
+  display:block;
+
+  margin:6px 0;
+}
+
+.pack-lock span{
+  background:rgba(255,30,60,0.2);
+
+  border:1px solid rgba(255,30,60,0.5);
+
+  padding:4px 10px;
+
+  border-radius:999px;
+
+  font-size:10px;
+
+  color:#fff;
+
+  display:inline-block;
+
+  margin-top:8px;
+}
+
+.pack-info{
+  position:absolute;
+
+  bottom:0;
+  left:0;
+  right:0;
+
+  padding:12px 14px;
+
+  background:
+    linear-gradient(
+      to top,
+      #0A1931 60%,
+      transparent
+    );
+
+  z-index:3;
+
+  box-sizing:border-box;
+
+  min-width:0;
+}
+
+.pack-title{
+  color:#fff;
+
+  font-family:Orbitron,sans-serif;
+
+  font-weight:800;
+
+  font-size:13px;
+
+  white-space:nowrap;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+}
+
+.pack-sub{
+  color:#9CA3AF;
+
+  font-size:11px;
+
+  margin-top:3px;
+
+  white-space:nowrap;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+}
+
+/* ============================================================
+   SAMPLES
+   ============================================================ */
+
+.samples-grid{
+  display:grid !important;
+
+  grid-template-columns:
+    repeat(4,minmax(0,1fr)) !important;
+
+  gap:12px !important;
+
+  width:100% !important;
+  max-width:100% !important;
+
+  box-sizing:border-box !important;
+
+  min-width:0;
+}
+
+.sample-card{
+  position:relative;
+
+  width:100%;
+  max-width:100%;
+
+  height:130px;
+
+  background:#050A14;
+
+  border:1px solid rgba(255,255,255,0.1);
+
+  border-radius:12px;
+
+  overflow:hidden;
+
+  box-sizing:border-box;
+
+  min-width:0;
+}
+
+.sample-card.is-locked-faded{
+  opacity:0.6;
+
+  filter:grayscale(0.25);
+}
+
+.sample-card img{
+  position:absolute;
+
+  inset:0;
+
+  width:100% !important;
+  height:100% !important;
+
+  min-width:100%;
+  min-height:100%;
+
+  object-fit:cover !important;
+  object-position:center !important;
+
+  opacity:0.5;
+
+  display:block;
+}
+
+.sample-body{
+  position:absolute;
+
+  bottom:0;
+  left:0;
+  right:0;
+
+  padding:8px 10px;
+
+  z-index:2;
+
+  background:
+    linear-gradient(
+      to top,
+      #0A1931,
+      transparent
+    );
+
+  box-sizing:border-box;
+
+  min-width:0;
+}
+
+.sample-title{
+  color:#fff;
+
+  font-size:11px;
+
+  font-weight:700;
+
+  white-space:nowrap;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+}
+
+.sample-sub{
+  color:#9CA3AF;
+
+  font-size:10px;
+
+  white-space:nowrap;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+}
+
+.sample-lock{
+  position:absolute;
+
+  inset:0;
+
+  display:grid;
+
+  place-items:center;
+
+  background:rgba(5,10,20,0.72);
+
+  z-index:3;
+
+  color:#FF1E3C;
+
+  font-weight:900;
+
+  font-size:11px;
+
+  text-align:center;
+
+  line-height:1.2;
+}
+
+.sample-lock small{
+  color:#fff;
+
+  font-size:10px;
+}
+
+/* ============================================================
+   FREE TOOLS
+   ============================================================ */
+
+.free-tools-list{
+  display:grid;
+
+  grid-template-columns:
+    repeat(2,minmax(0,1fr));
+
+  gap:10px;
+
+  width:100%;
+
+  min-width:0;
+}
+
+.free-tool{
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
+
+  gap:10px;
+
+  background:rgba(10,25,49,0.6);
+
+  border:1px solid rgba(255,255,255,0.08);
+
+  border-radius:12px;
+
+  padding:14px 16px;
+
+  box-sizing:border-box;
+
+  min-width:0;
+
+  max-width:100%;
+
+  overflow:hidden;
+}
+
+.free-tool.is-locked{
+  opacity:0.6;
+}
+
+.free-tool-info{
+  min-width:0;
+
+  overflow:hidden;
+}
+
+.free-tool-info span{
+  color:#fff;
+
+  font-weight:700;
+
+  font-size:13px;
+
+  white-space:nowrap;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+}
+
+.free-tool-info small{
+  color:#9CA3AF;
+
+  font-size:11px;
+
+  white-space:nowrap;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+
+  display:block;
+}
+
+.free-tool-action{
+  border:0;
+
+  padding:7px 14px;
+
+  border-radius:999px;
+
+  font-size:11px;
+
+  font-weight:800;
+
+  cursor:pointer;
+
+  flex-shrink:0;
+
+  white-space:nowrap;
+}
+
+.action-open{
+  background:#1E90FF;
+
+  color:#fff;
+}
+
+.action-soon{
+  background:rgba(255,255,255,0.1);
+
+  color:#9CA3AF;
+}
+
+/* ============================================================
+   TABLET
+   ============================================================ */
+
+@media(max-width:1000px){
+
+  .vault-tabs{
+    grid-template-columns:
+      repeat(2,minmax(0,1fr)) !important;
+
+    gap:12px;
+
+    overflow:visible !important;
+  }
+
+  .packs-preview-grid{
+    grid-template-columns:
+      repeat(2,minmax(0,1fr)) !important;
+  }
+
+  .samples-grid{
+    grid-template-columns:
+      repeat(3,minmax(0,1fr)) !important;
+  }
+
+}
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media(max-width:700px){
+
+  .vault-root{
+    padding:
+      15px
+      12px
+      80px
+      12px !important;
+
+    background-attachment:scroll;
+  }
+
+  .vault-title-only{
+    font-size:22px;
+
+    letter-spacing:3px;
+  }
+
+  /* 2 x 2 CATEGORY GRID */
+  .vault-tabs{
+    display:grid !important;
+
+    grid-template-columns:
+      repeat(2,minmax(0,1fr)) !important;
+
+    gap:10px;
+
+    padding:
+      8px 0
+      18px 0;
+
+    overflow:visible !important;
+  }
+
+  .vault-tab{
+    width:100% !important;
+
+    min-width:0 !important;
+
+    height:96px;
+
+    padding:8px;
+
+    border-radius:12px;
+  }
+
+  .tab-bg-stack{
+    top:8px;
+    left:8px;
+
+    width:52px;
+    height:52px;
+  }
+
+  .tab-bg-card{
+    width:44px;
+    height:44px;
+  }
+
+  .tab-title{
+    font-size:10px;
+
+    letter-spacing:.7px;
+  }
+
+  .tab-sub{
+    font-size:9px;
+  }
+
+  /* BEATS ONE COLUMN */
+  .yt-music-grid{
+    grid-template-columns:
+      1fr !important;
+
+    gap:8px !important;
+  }
+
+  .yt-track{
+    padding:9px;
+
+    gap:9px;
+  }
+
+  .yt-track img{
+    width:48px !important;
+    height:48px !important;
+
+    min-width:48px !important;
+    min-height:48px !important;
+  }
+
+  .yt-title{
+    font-size:12px;
+  }
+
+  .yt-artist{
+    font-size:10px;
+  }
+
+  /* PACKS 2 COLUMNS */
+  .packs-preview-grid{
+    grid-template-columns:
+      repeat(2,minmax(0,1fr)) !important;
+
+    gap:9px !important;
+  }
+
+  .pack-preview-card{
+    height:260px;
+    border-radius:12px;
+  }
+
+  .pack-title{
+    font-size:10px;
+  }
+
+  .pack-sub{
+    font-size:9px;
+  }
+
+  .pack-lock{
+    font-size:10px;
+  }
+
+  .pack-lock small{
+    font-size:9px;
+  }
+
+  /* SAMPLES 2 COLUMNS */
+  .samples-grid{
+    grid-template-columns:
+      repeat(2,minmax(0,1fr)) !important;
+
+    gap:8px !important;
+  }
+
+  .sample-card{
+    height:115px;
+  }
+
+  /* FREE TOOLS ONE COLUMN */
+  .free-tools-list{
+    grid-template-columns:
+      1fr !important;
+  }
+
+  .free-tool{
+    padding:12px;
+  }
+
+}
+
+/* ============================================================
+   VERY SMALL PHONES
+   ============================================================ */
+
+@media(max-width:380px){
+
+  .vault-root{
+    padding-left:8px !important;
+    padding-right:8px !important;
+  }
+
+  /*
+   * STILL 2 COLUMNS.
+   * Nothing horizontally overflows.
+   */
+  .vault-tabs{
+    grid-template-columns:
+      repeat(2,minmax(0,1fr)) !important;
+
+    gap:7px;
+  }
+
+  .vault-tab{
+    height:88px;
+
+    padding:7px;
+  }
+
+  .tab-bg-stack{
+    transform:scale(.85);
+
+    transform-origin:top left;
+  }
+
+  .tab-title{
+    font-size:9px;
+  }
+
+  .tab-sub{
+    font-size:8px;
+  }
+
+  .packs-preview-grid{
+    grid-template-columns:
+      repeat(2,minmax(0,1fr)) !important;
+
+    gap:7px !important;
+  }
+
+  .pack-preview-card{
+    height:220px;
+  }
+
+  .samples-grid{
+    grid-template-columns:
+      repeat(2,minmax(0,1fr)) !important;
+
+    gap:7px !important;
+  }
+
+  .sample-card{
+    height:105px;
+  }
+
+  .section-head{
+    align-items:flex-start;
+  }
+
+  .section-head h2{
+    font-size:14px;
+  }
+
+  .view-all-btn{
+    font-size:9px;
+
+    padding:7px 11px;
+  }
+
+}
+
+/* ============================================================
+   EXTRA SMALL WIDTH — PREVENT TEXT/CONTROLS BREAKING
+   ============================================================ */
+
+@media(max-width:320px){
+
+  .vault-tab{
+    height:82px;
+
+    padding:6px;
+  }
+
+  .tab-title{
+    font-size:8px;
+  }
+
+  .tab-sub{
+    font-size:7px;
+  }
+
+  .tab-bg-stack{
+    top:6px;
+    left:6px;
+
+    transform:scale(.75);
+
+    transform-origin:top left;
+  }
+
+  .pack-preview-card{
+    height:190px;
+  }
+
+  .pack-info{
+    padding:8px;
+  }
+
+  .pack-title{
+    font-size:9px;
+  }
+
+  .pack-sub{
+    font-size:8px;
+  }
+
+}
+
+/* ============================================================
+   IMAGE SAFETY
+   PREVENT OTHER GLOBAL IMG CSS FROM BREAKING VAULT
+   ============================================================ */
+
+.vault-root img{
+  max-width:100%;
+}
+
+.vault-root .tab-bg-card img,
+.vault-root .yt-track img,
+.vault-root .pack-preview-card img,
+.vault-root .sample-card img{
+  object-fit:cover !important;
+}
+
+/* ============================================================
+   PREVENT GLOBAL BODY / PAGE HORIZONTAL SCROLL
+   ============================================================ */
+
+.vault-root,
+.vault-root *{
+  max-width:100%;
+}
+
+.vault-root .vault-tabs,
+.vault-root .yt-music-grid,
+.vault-root .packs-preview-grid,
+.vault-root .samples-grid,
+.vault-root .free-tools-list{
+  overflow-x:hidden;
+}

@@ -3,7 +3,7 @@ export function initLeft(){
   if(!el) return;
 
   el.innerHTML = `
-  <style> 
+  <style>
     #left-sidebar{ transition: width.32s cubic-bezier(.16,1,.3,1); }
     #left-sidebar.collapsed{ width:72px!important; }
     #left-sidebar.collapsed.hide-when-collapsed{ display:none!important; }
