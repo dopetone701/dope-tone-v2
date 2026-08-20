@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Orbitron:wght@700;900&family=Orbitron:wght@700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Orbitron:wght@700;900&display=swap');
+
+@import url('../layout/leftsidebar/leftsidebar.css');
+@import url('../layout/playerbar/player.css');
 
 @import url('../features/home/hero.css');
 @import url('../features/home/featured.css');
@@ -21,22 +24,7 @@
 @import url('../features/controlCenter/cc-overview/cc-top-ranking.css');
 
 :root{
-  --navy:#0A1931;
-  --void:#050A14;
-  --red:#FF1E3C;
-  --blue:#1E90FF;
-  --chrome:#E5E7EB;
-  --white:#FFFFFF;
-  --muted:#9CA3AF;
-  --border:rgba(255,255,255,0.08);
-  --border2:rgba(255,255,255,0.14);
-  --top-h:64px;
-  --left-w:280px;
-  --left-collapsed:72px;
-  --right-w:280px;
-  --player-h:86px;
-  --gap:8px;
-  --radius:14px;
+  --navy:#0A1931;--void:#050A14;--red:#FF1E3C;--blue:#1E90FF;--chrome:#E5E7EB;--white:#FFFFFF;--muted:#9CA3AF;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);--top-h:64px;--left-w:280px;--left-collapsed:72px;--right-w:280px;--player-h:86px;--gap:8px;--radius:14px;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{visibility:hidden;opacity:0;background:var(--void)}
