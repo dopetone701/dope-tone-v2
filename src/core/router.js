@@ -1,4 +1,4 @@
-// src/core/router.js - V9.6 FINAL - FIXED FOOTER 404 - KEEPS V9.4 cart V8 + paypal-v2
+// src/core/router.js - V9.7 FINAL - ONLY EXISTING FILES
 const PAGE_MAP = {
   '/': 'home', '/home': 'home', 'home': 'home',
   '/vault': 'vault', 'vault': 'vault',
@@ -46,7 +46,7 @@ export const Router = {
     let raw = rawFull.split('?')[0].replace(/\/$/, '');
     if (!raw || raw === 'index.html' || raw === 'public' || raw === '/') raw = 'home';
     const path = '/' + raw.replace(/^\/+/, '').toLowerCase();
-    console.log('%c ROUTING -> ' + path + ' | full=' + rawFull, 'background:#FF1E3C;color:white;padding:2px 8px;border-radius:4px');
+    console.log('%c ROUTING -> ' + path, 'background:#FF1E3C;color:white;padding:2px 8px;border-radius:4px');
     const view = document.getElementById('app-view');
     if (!view) return;
 
@@ -55,7 +55,8 @@ export const Router = {
         const { mountCC } = await import('../features/controlCenter/cc-router-v2.js');
         await mountCC(path, view);
       } catch (err) {
-        view.innerHTML = `<div style="padding:40px;color:#FF4D6D">CC Error: ${err.message}</div>`;
+        console.error('CC error', err);
+        view.innerHTML = `<div style="padding:40px;color:#FF4D6D;background:#0A1931">CC Error: ${err.message}<pre style="font-size:11px">${err.stack||''}</pre></div>`;
       }
       return;
     }
@@ -104,7 +105,7 @@ export const Router = {
           try {
             const paypalV2 = await import('../features/licence/checkout-paypal-v2.js');
             if (paypalV2.setupCheckout) paypalV2.setupCheckout();
-          } catch (e) { console.log('paypal-v2 load error', e.message); }
+          } catch (e) {}
           window.scrollTo(0,0);
           return;
         }
@@ -127,12 +128,14 @@ export const Router = {
           return;
         }
         if (path === '/arsenal') {
-          const m = await import('../pages/arsenal-page.js');
-          view.innerHTML = m.renderArsenalPage();
-          if (m.initArsenalPage) await m.initArsenalPage();
+          // REAL ARSENAL IS IN features/home/arsenal.js - NOT pages/arsenal-page.js
+          const m = await import('../features/home/arsenal.js');
+          view.innerHTML = m.renderBeatsArsenal? m.renderBeatsArsenal() : m.renderArsenal? m.renderArsenal() : `<div>Arsenal</div>`;
+          if (m.initBeatsArsenal) await m.initBeatsArsenal();
+          if (m.initArsenal) await m.initArsenal();
+          window.scrollTo(0,0);
           return;
         }
-
         if (path === '/about' || path === '/dt-about') {
           const m = await import('../pages/footer-links/dt-about.js');
           view.innerHTML = m.renderDtAbout? m.renderDtAbout() : m.render? m.render() : '';
@@ -162,10 +165,17 @@ export const Router = {
           return;
         }
         if (path === '/license' || path === '/license-help' || path === '/licence-help') {
-          const m = await import('../features/licence/licence.js');
-          view.innerHTML = m.renderLicence? m.renderLicence() : m.render? m.render() : '';
-          if (m.initLicence) await m.initLicence();
-          if (m.init) await m.init();
+          // license-help.js exists, licence.js may not - use existing
+          try {
+            const m = await import('../pages/footer-links/license-help.js');
+            view.innerHTML = m.render? m.render() : '';
+            if (m.init) await m.init();
+          } catch {
+            const m2 = await import('../features/licence/licence.js');
+            view.innerHTML = m2.renderLicence? m2.renderLicence() : m2.render? m2.render() : '';
+            if (m2.initLicence) await m2.initLicence();
+            if (m2.init) await m2.init();
+          }
           window.scrollTo(0,0);
           return;
         }
@@ -178,10 +188,8 @@ export const Router = {
           return;
         }
         if (path === '/checkout-info') {
-          const m = await import('../pages/footer-links/checkout.js');
-          view.innerHTML = m.renderCheckoutInfo? m.renderCheckoutInfo() : m.render? m.render() : '';
-          if (m.init) await m.init();
-          window.scrollTo(0,0);
+          // checkout.js DELETED - show placeholder, keep existing files safe
+          view.innerHTML = `<div style="min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#050A14;color:#fff;padding:40px"><h1 style="font-family:Orbitron;color:#FF1E3C">CHECKOUT INFO</h1><p style="color:#6B7280;margin-top:10px">Coming Soon</p></div>`;
           return;
         }
 

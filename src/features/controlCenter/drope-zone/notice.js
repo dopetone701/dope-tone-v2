@@ -256,4 +256,3 @@ function initChatBoss(){
   input.onkeydown=e=>{ if(e.key==='Enter') btn.click(); }; loadCC(true); setInterval(()=>loadCC(false),2500);
 }
 export { loadNoticeHistory };
-

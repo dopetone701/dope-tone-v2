@@ -118,4 +118,3 @@ export function unmountControlCenterShell(){
   document.getElementById('left-sidebar')?.classList.remove('hidden');
   document.getElementById('right-sidebar')?.classList.remove('hidden');
 }
-

@@ -380,4 +380,3 @@ export async function uploadPack(zipFile, coverFile, packData, btn) {
   if (coverFile) coverData = await uploader.uploadBeast(coverFile, 'covers', document.getElementById('progCover'), 'Cover');
   return { zipUrl: zipData.url, zipKey: zipData.key, coverUrl: coverData?.url, coverKey: coverData?.key };
 }
-

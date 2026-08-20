@@ -338,4 +338,3 @@ export async function initCharts(){
 
 export function destroyCharts(){ if(pollInterval) clearInterval(pollInterval); if(resizeObserver) resizeObserver.disconnect(); try{primaryChart?.apex?.destroy();momentumChart?.apex?.destroy();conversionChart?.apex?.destroy();}catch{} primaryChart=momentumChart=conversionChart=null; isInitialized=false; }
 export function getAnalyticsState(){ return {initialized:isInitialized,metric:activeMetric,range:currentRange,points:activeDataset.length,follow:followPlayerEnabled,locked:lockedTrackMode,playing:currentPlayingId,title:currentPlayingTitle}; }
-

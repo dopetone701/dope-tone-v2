@@ -1,4 +1,5 @@
-// CC V9.7 FINAL - FIXED FOR APEX PRO GRAPHS - DIV NOT CANVAS
+// src/features/controlCenter/cc-router-v2.js
+// CC V9.8 FINAL - GREEN BUILD - NO FALLBACK IMPORT - KEEPS ALL IMPORTANT FILES
 export async function mountCC(fullPath, viewEl){
   const route = (fullPath.replace('#/cc/','').replace('/cc/','').replace('/cc','').replace(/^\//,'') || 'overview').split('?')[0];
   const rightEl = document.getElementById('right-sidebar');
@@ -71,12 +72,16 @@ export async function mountCC(fullPath, viewEl){
       const rankingMod = await import('./cc-overview/cc-top-ranking.js').catch(()=>null);
       if(rankingMod?.mount){ const rankingEl = pageEl.querySelector('#cc-ranking-wrap'); await rankingMod.mount(rankingEl); }
     } else if(route==='beats'){
+      // FIXED - ONLY REAL FILE, NO FALLBACK TO MISSING FILE
       try{
         const beatsMod = await import('./beats/cc-beats-table.js');
         if(beatsMod.mount) await beatsMod.mount(pageEl);
-        else if(beatsMod.initBeatsTable){ pageEl.innerHTML = `<div id="beatsHeaderInject"></div><div id="beatsScrollWrap" style="height:calc(100vh - 180px);overflow:auto"><table style="width:100%"><tbody id="beatsTableBody"></tbody></table></div>`; await beatsMod.initBeatsTable(); }
+        else if(beatsMod.initBeatsTable){
+          pageEl.innerHTML = `<div id="beatsHeaderInject"></div><div id="beatsScrollWrap" style="height:calc(100vh - 180px);overflow:auto"><table style="width:100%"><tbody id="beatsTableBody"></tbody></table></div>`;
+          await beatsMod.initBeatsTable();
+        }
       }catch(err){
-        try{ const fallback = await import('./cc-overview/cc-beats-table.js'); if(fallback.mount) await fallback.mount(pageEl); else if(fallback.initBeatsTable){ pageEl.innerHTML = `<div id="beatsHeaderInject"></div><table><tbody id="beatsTableBody"></tbody></table>`; await fallback.initBeatsTable(); } }catch(e2){ pageEl.innerHTML = `<div style="color:#ff5555;padding:20px">Beats table not found: ${err.message}</div>`; }
+        pageEl.innerHTML = `<div style="color:#ff5555;padding:20px">Beats table error: ${err.message}<pre>${err.stack||''}</pre></div>`;
       }
       import('./beats/cc-create-modal.js').then(m=>m.init&&m.init()).catch(()=>{});
       import('./beats/cc-edit-modal.js').then(m=>m.init&&m.init()).catch(()=>{});
@@ -129,4 +134,3 @@ export function checkCCMode(){
   if(!isCC && localStorage.getItem('dt_cc_open')){ if(!window.__ccMiddleOpen){ restoreQueue(); } }
 }
 window.addEventListener('hashchange', checkCCMode);
-

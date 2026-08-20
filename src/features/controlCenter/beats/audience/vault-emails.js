@@ -91,4 +91,3 @@
   else injectButton();
   setInterval(injectButton, 2000);
 })();
-

@@ -168,4 +168,3 @@ window.reopenTicket = async (id)=>{
 window.closeTicket = window.resolveTicket;
 export { load as refreshTickets, load as loadTickets };
 export default { initTickets, loadTickets: load };
-

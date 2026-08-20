@@ -4,4 +4,3 @@ export function initEmailComposer() {
   // no-op - vault-emails.js auto-injects button
   return;
 }
-

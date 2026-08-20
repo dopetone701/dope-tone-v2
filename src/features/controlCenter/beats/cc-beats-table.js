@@ -290,4 +290,3 @@ window.addEventListener('player:play', (e)=>{ const id=e.detail?.beatId||e.detai
 window.addEventListener('player:pause', ()=>{ if(currentPlayingId){ updatePlayButtonInTable(currentPlayingId,false); currentPlayingId=null; } });
 document.addEventListener('playerPlay', (e)=>{ const id=e.detail?.beatId||window.__CURRENT_BEAT__?.id; if(id){ if(currentPlayingId) updatePlayButtonInTable(currentPlayingId,false); currentPlayingId=String(id); updatePlayButtonInTable(id,true); } });
 document.addEventListener('playerPause', ()=>{ if(currentPlayingId){ updatePlayButtonInTable(currentPlayingId,false); currentPlayingId=null; } });
-

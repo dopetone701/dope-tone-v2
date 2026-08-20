@@ -200,4 +200,3 @@ function exportEmails(){
 
 window.addEventListener('cc_dashboard_refresh', ()=>loadEmails());
 window.sendBulkEmails = sendBulkEmails;
-

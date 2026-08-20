@@ -235,4 +235,3 @@ export function mount(){ init(); }
 window.addEventListener('cc_edit_beat',(e)=>{const b=allBeats.find(x=>String(x.id)===String(e.detail));if(b)openEditModal(b);});
 window.ccEditBeat=(id)=>{const b=allBeats.find(x=>String(x.id)===String(id));if(b)openEditModal(b);};
 window.openEditModalDirect=openEditModal;
-
