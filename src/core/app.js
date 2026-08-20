@@ -6,15 +6,14 @@ import { store } from './store.js';
 import { Router } from './router.js';
 import { getBeats, getStatsOverview } from '../features/api.js';
 import { initTopbar } from '../layout/topbar/topbar.js';
-import { initLeft } from '../layout/leftSidebar/leftSidebar.js';
-import { initRight } from '../layout/rightSidebar/rightSidebar.js';
-import { initPlayerBar, initPlayerEngine } from '../layout/playerBar/playerBar.js';
+import { initLeft } from '../layout/leftsidebar/leftsidebar.js';
+import { initRight } from '../layout/rightsidebar/rightsidebar.js';
+import { initPlayerBar, initPlayerEngine } from '../layout/playerbar/playerbar.js';
 import { renderFooter } from '../pages/footer.js';
 
 import { injectAuthModals } from '../features/auth/auth-modals.js';
-injectAuthModals(); // <-- MUST BE BEFORE AUTH IMPORT
+injectAuthModals();
 import '../features/auth/auth.js';
-
 
 window.DTStore = store;
 
@@ -22,10 +21,7 @@ console.log('%c DOPE TONE V2 - HASH ONLY ', 'background:#FF1E3C;color:white;padd
 
 async function boot() {
   console.log('[V2 APP] Booting...');
-
-  // 🔥 INJECT FIRST - KEEPS INDEX.HTML CLEAN
   try { injectAuthModals(); } catch(e){ console.error('auth modals',e); }
-
   try { initPlayerEngine(); initPlayerBar(); } catch (e) { console.error(e); }
   try { initTopbar(); initLeft(); initRight(); } catch (e) { console.error(e); }
 
@@ -78,7 +74,6 @@ async function boot() {
 
   overlay.addEventListener('click', window.closeLeft);
 
-  // Load beats
   try {
     const [beats, overview] = await Promise.all([getBeats(), getStatsOverview().catch(()=>({}))]);
     store.beats = Array.isArray(beats)? beats : [];
@@ -93,11 +88,8 @@ async function boot() {
   }
 
   document.documentElement.classList.add('loaded');
-
   try { renderFooter(); } catch(e){}
-
   window.addEventListener('hashchange', () => window.closeLeft?.());
-
   console.log('%c DOPE TONE V2 READY ', 'background:#E2FF54;color:#050505;padding:6px 12px;border-radius:8px;font-weight:900');
 }
 
