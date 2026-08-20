@@ -91,15 +91,9 @@ export const Router = {
           return;
         }
         if (path === '/licence/vault' || path.startsWith('/licence/vault') || path === '/vault-private') {
-          try {
-            const m = await import('../features/licence/vault-private-v2.js');
-            view.innerHTML = m.render();
-            if (m.init) await m.init();
-          } catch {
-            const m = await import('../features/licence/vault-private.js');
-            view.innerHTML = m.render();
-            if (m.init) await m.init();
-          }
+          const m = await import('../features/licence/vault-private.js');
+          view.innerHTML = m.render();
+          if (m.init) await m.init();
           window.scrollTo(0,0);
           return;
         }
@@ -139,7 +133,6 @@ export const Router = {
           return;
         }
 
-        // ===== FOOTER LINKS - FIXED - NO CSS IMPORT ISSUE =====
         if (path === '/about' || path === '/dt-about') {
           const m = await import('../pages/footer-links/dt-about.js');
           view.innerHTML = m.renderDtAbout? m.renderDtAbout() : m.render? m.render() : '';
@@ -168,7 +161,6 @@ export const Router = {
           window.scrollTo(0,0);
           return;
         }
-        // FIXED: added /license-help + /licence-help both
         if (path === '/license' || path === '/license-help' || path === '/licence-help') {
           const m = await import('../features/licence/licence.js');
           view.innerHTML = m.renderLicence? m.renderLicence() : m.render? m.render() : '';
@@ -217,4 +209,3 @@ window.Router = Router;
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => Router.init(), { once: true });
 } else Router.init();
-
