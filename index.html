@@ -57,32 +57,6 @@ html, body {
 
 </style>
 
-<script>
-// V14 - KEEP MUSIC ALIVE ON LOCK / BG
-(function(){
-  let wakeLock = null;
-  async function lockScreenKeepAlive(){
-    try{
-      if('wakeLock' in navigator){
-        wakeLock = await navigator.wakeLock.request('screen');
-        wakeLock.addEventListener('release', ()=>{ console.log('wakeLock released'); });
-      }
-    }catch{}
-    try{
-      if('mediaSession' in navigator){
-        navigator.mediaSession.playbackState = 'playing';
-      }
-    }catch{}
-  }
-  document.addEventListener('click', ()=>{ lockScreenKeepAlive(); }, {once:true});
-  document.addEventListener('visibilitychange', ()=>{
-    if(!document.hidden && window.__DT_AUDIO__ && window.__SHOULD_PLAY__){
-      setTimeout(()=> window.__DT_AUDIO__.play().catch(()=>{}), 150);
-      lockScreenKeepAlive();
-    }
-  });
-})();
-</script>
 
 
 </head>
@@ -98,7 +72,6 @@ html, body {
     <div id="right-sidebar"></div>
   </div>
   <div id="player-bar"></div>
-  
 </div>
 
 <!-- MISSING DIVS - THE FIX -->
