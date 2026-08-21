@@ -143,17 +143,23 @@ function bootPlayerListeners(){
     document.dispatchEvent(new CustomEvent('playerPlay',{detail:{index:DTPlayer.index, listId:window.__CURRENT_LIST__, beatId, title:beatTitle}}));
   });
 
-  audio.addEventListener('pause', ()=>{
-    // FIX: don't ignore hidden, but track user intent
+   audio.addEventListener('pause', ()=>{
     if(audio.ended) return;
     lastPauseTime = Date.now();
-    // if pause is within 1s of play, it's a browser stutter, ignore
-    if(audio.currentTime < 0.5) return;
+    // if user didn't click pause, it's system trying to kill it on lock -> RESURRECT
+    if(window.__SHOULD_PLAY__ && !isUserPausing){
+      console.log('[PLAYER] System paused us, resurrecting...');
+      setTimeout(()=>{
+        if(window.__SHOULD_PLAY__) audio.play().catch(()=>{});
+      }, 200);
+      return;
+    }
     window.__SHOULD_PLAY__ = false;
     document.body.classList.remove('playing');
     syncPlayIcons(false);
     document.dispatchEvent(new CustomEvent('playerPause'));
   });
+
 
   // FIX 3: YOUTUBE BUFFER BAR + SMOOTH PROGRESS - rAF ONLY
   let rafId = null;
