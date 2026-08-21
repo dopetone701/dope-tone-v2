@@ -223,5 +223,34 @@
 }
 .featured-card:active{cursor: grabbing}
 
+.section-title.v2-title{
+  background: none !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  letter-spacing: 2px !important;
+  color: #fff !important;
+  padding: 0 0 0 10px !important;
+  margin: 32px 0 16px 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.section-title.v2-title::before{
+  content: "" !important;
+  width: 3px !important;
+  height: 18px !important;
+  background: linear-gradient(180deg, #60B5FF, #FF1E3C) !important;
+  border-radius: 999px !important;
+  display: inline-block !important;
+}
+
+.section-title.v2-title::after{
+  display: none !important;
+}
 
 

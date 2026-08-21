@@ -18,12 +18,18 @@ export function initTopbar(){
       border-bottom:1px solid rgba(255,255,255,0.1);
       backdrop-filter:blur(14px); display:flex; align-items:center; z-index:1000; flex-shrink:0;
       box-shadow:inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 40px rgba(0,0,0,0.6);
+      overflow:hidden;
+
     }
     #topbar::after{
-      content:""; position:absolute; left:0; right:0; bottom:0; height:2px;
-      background:linear-gradient(90deg, #0A1931 0%, #FF1E3C 50%, #60B5FF 100%);
-      opacity:0.8;
-    }
+  content:""; position:absolute; left:0; right:0; bottom:0; height:2px;
+  background:linear-gradient(90deg, #0A1931 0%, #FF1E3C 50%, #60B5FF 100%);
+  opacity:0.8;
+  border-radius:999px;
+  width:100%;
+  box-sizing:border-box;
+}
+
     .top-inner{ width:100%; height:100%; padding:0 14px 0 16px; display:flex; align-items:center; gap:20px; }
 
     .top-left{ display:flex; align-items:center; gap:14px; flex-shrink:0; }
@@ -312,6 +318,39 @@ body #left-sidebar#left-sidebar{ z-index:50!important; }
 body #left-sidebar.open{ z-index:50!important; }
 
 
+@media(max-width:768px){
+  #mobileSearchToggle{ display:flex !important; }
+  .logo-v2 .text{ transition: all .35s cubic-bezier(.16,1,.3,1) !important; width:140px; opacity:1; }
+  #topbar.search-active .logo-v2 .text{ width:0 !important; opacity:0 !important; transform:translateX(-10px) !important; pointer-events:none !important; overflow:hidden !important; }
+  #mobileSearchWrap{ display:flex !important; align-items:center; flex:1; min-width:0; opacity:0; width:0; overflow:hidden; transform:translateX(-10px); transition: all .35s cubic-bezier(.16,1,.3,1); }
+  #topbar.search-active #mobileSearchWrap{ opacity:1 !important; width:100% !important; transform:translateX(0) !important; }
+}
+
+
+@media(max-width:768px){
+  /* kill center absolute when we morph */
+  #topbar.search-active .logo-v2{
+    position:relative !important;
+    left:auto !important;
+    transform:none !important;
+  }
+  #topbar .top-left{
+    position:relative !important;
+    left:auto !important;
+    transform:none !important;
+    flex:1 !important;
+    display:flex !important;
+    align-items:center !important;
+    min-width:0 !important;
+  }
+  #topbar.search-active .top-left{
+    gap:8px !important;
+  }
+  /* make morph smooth */
+  #topbar .logo-v2 .mark{ flex-shrink:0 !important; }
+}
+
+
   </style>
 
   <div class="top-inner">
@@ -326,6 +365,16 @@ body #left-sidebar.open{ z-index:50!important; }
           <i>VAULT • STUDIO</i>
         </div>
       </a>
+
+      <div id="mobileSearchWrap" style="display:none">
+        <div style="position:relative;width:100%">
+          <input id="mobileSearchInput" type="search" placeholder="Search beats..." autocomplete="off" style="width:100%;height:36px;background:#050A14;border:1px solid rgba(255,255,255,0.12);border-radius:999px;padding:0 36px 0 14px;color:#fff;font-size:13px;outline:none" />
+          <button id="mobileSearchClose" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;border:0;background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;display:grid;place-items:center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
       
 
 <nav class="nav-links-v2">
@@ -366,8 +415,12 @@ body #left-sidebar.open{ z-index:50!important; }
     </div>
 
 
-    <div class="auth-buttons">
+       <div class="auth-buttons">
+      <button type="button" class="nav-icon-btn" id="mobileSearchToggle" style="display:none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E5E7EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      </button>
       <button type="button" class="nav-icon-btn mobile-cart" id="mobileCartBtn">🛒<span class="cart-count" data-cart-count>0</span></button>
+
       <div class="auth-guest" id="authGuest" data-auth="guest-area" style="display:flex; gap:8px; align-items:center;">
         <button type="button" id="loginBtn" class="btn-login">Login</button>
         <button type="button" id="signupBtn" class="btn-signup">Sign Up</button>
@@ -735,6 +788,53 @@ document.addEventListener('click', (e)=>{
   };
 
   };
+
+
+  // MOBILE SEARCH SURGICAL
+const topbarEl = document.getElementById('topbar');
+const mToggle = document.getElementById('mobileSearchToggle');
+const mWrap = document.getElementById('mobileSearchWrap');
+const mInput = document.getElementById('mobileSearchInput');
+const mClose = document.getElementById('mobileSearchClose');
+if(mToggle){
+  mToggle.onclick = (e)=>{
+    e.preventDefault();
+    topbarEl.classList.add('search-active');
+    if(!location.hash.includes('beats')) location.hash = '#/beats';
+    setTimeout(()=> mInput?.focus(), 350);
+  };
+}
+if(mClose){
+  mClose.onclick = ()=>{
+    topbarEl.classList.remove('search-active');
+    if(mInput) mInput.value='';
+  };
+}
+if(mInput){
+  mInput.addEventListener('input', (e)=>{
+    const v = e.target.value;
+    localStorage.setItem('dt_last_search', v);
+    window.dispatchEvent(new CustomEvent('search:query',{detail:{query:v.toLowerCase(), raw:v}}));
+    const d = document.getElementById('globalSearch');
+    if(d) d.value = v;
+  });
+}
+
+
+// LOGO ALWAYS HOME
+const logoHome = document.querySelector('.logo-v2');
+if(logoHome){
+  logoHome.onclick = (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+    topbarEl.classList.remove('search-active');
+    if(mInput) mInput.value='';
+    location.hash = '#/';
+    window.dispatchEvent(new CustomEvent('search:query',{detail:{query:'', raw:''}}));
+    window.scrollTo({top:0, behavior:'smooth'});
+  };
+}
+
 }
 
 

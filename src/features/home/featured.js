@@ -70,7 +70,7 @@ export function renderFeatured(){
 
   if(!document.getElementById('feat-v2-title')){
     const d=document.createElement('div'); d.id='feat-v2-title';
-    d.innerHTML=`<div class="section-title-wrap-fixed"><h2 class="section-title v2-title">🔥 Featured Drops</h2></div>`;
+    d.innerHTML=`<div class="section-title-wrap-fixed"><h2 class="section-title v2-title"> Featured Drops</h2></div>`;
     root.parentElement.insertBefore(d, root);
   }
 

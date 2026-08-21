@@ -225,3 +225,56 @@
     box-sizing: border-box !important;
   }
 }
+
+
+/* ===========================================
+   FEATURED - SAME STYLE AS LATEST / ARSENAL / TRENDING / NOTICE
+   =========================================== */
+
+#featuredMount .section-title,
+.featured-section .section-title,
+#featuredMount .section-title-wrap,
+.featured-section .section-title-wrap{
+  all: unset !important;
+}
+
+#featuredMount .section-title,
+.featured-section .section-title{
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  letter-spacing: 2px !important;
+  color: #fff !important;
+  margin: 32px 0 16px 0 !important;
+  padding-left: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: fit-content !important;
+  text-shadow: none !important;
+  background: none !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+#featuredMount .section-title::before,
+.featured-section .section-title::before{
+  content: "" !important;
+  width: 3px !important;
+  height: 18px !important;
+  background: linear-gradient(180deg, #60B5FF, #FF1E3C) !important;
+  border-radius: 999px !important;
+  display: inline-block !important;
+  flex-shrink: 0 !important;
+}
+
+#featuredMount .section-title::after,
+.featured-section .section-title::after{
+  display: none !important;
+  content: none !important;
+}
+
+/* kill fire icon if any */
+#featuredMount .title-icon,
+.featured-section .title-icon{
+  display: none !important;
+}

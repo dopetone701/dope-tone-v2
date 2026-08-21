@@ -5,7 +5,7 @@
   gap:20px;
   width:100%;
   max-width:100%;
-  padding:0 12px;
+  padding:0 12px 160px 12px;
   box-sizing:border-box;
   align-items:start;
 }
@@ -43,7 +43,7 @@
   align-self:start;
   width:100%;
   box-sizing:border-box;
-  overflow:visible !important; /* FIX OVERLAP */
+  overflow:visible !important;
 }
 
 /* --- FULLSCREEN SIDE-BY-SIDE --- */
@@ -68,7 +68,7 @@
 
 #homeSmartWrap.side-by-side .ntg-card{
   width:100%;
-  max-height:none !important; /* REMOVE CAP THAT CAUSED OVERLAP */
+  max-height:none !important;
   overflow:visible !important;
   display:block;
   flex:none;
@@ -111,13 +111,12 @@
   }
 }
 
-
 /* FULLSCREEN = 2 CARDS ONLY */
 #homeSmartWrap.side-by-side #trendingGrid.trending-grid-v2{
   grid-template-columns:repeat(2, minmax(0,1fr)) !important;
 }
 #homeSmartWrap.side-by-side #trendingGrid.trending-grid-v2 .spotify-card:nth-child(n+3){
-  display:none !important; /* hide 3rd & 4th in fullscreen */
+  display:none !important;
 }
 
 /* mobile / stacked = 4 cards */
@@ -128,4 +127,41 @@
   #trendingGrid.trending-grid-v2 .spotify-card:nth-child(n+3){
     display:block !important;
   }
+}
+
+/* ===========================================
+   TITLE FIX - SAME AS FEATURED / LATEST / ARSENAL
+   =========================================== */
+.dt-section-title,
+.section-title.v2-title,
+.ntg-head h3,
+.ntg-card .ntg-head h3{
+  all:unset !important;
+  font-family:'Orbitron',sans-serif !important;
+  font-size:18px !important;
+  font-weight:800 !important;
+  letter-spacing:2px !important;
+  color:#fff !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+  margin:0 !important;
+}
+
+.dt-section-title::before,
+.section-title.v2-title::before,
+.ntg-head h3::before{
+  content:"" !important;
+  width:3px !important;
+  height:18px !important;
+  background:linear-gradient(180deg,#60B5FF,#FF1E3C) !important;
+  border-radius:999px !important;
+  display:inline-block !important;
+  flex-shrink:0 !important;
+}
+
+.section-title.v2-title::after,
+.ntg-head h3::after{
+  display:none !important;
+  content:none !important;
 }

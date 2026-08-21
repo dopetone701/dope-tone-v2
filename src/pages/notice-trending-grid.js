@@ -4,7 +4,7 @@ export function renderNoticeTrendingGrid(){
     <!-- LEFT - TRENDING -->
     <div class="ntg-trend">
       <div class="ntg-head">
-        <h3><span class="ntg-dot"></span> TRENDING</h3>
+        <h3>TRENDING</h3>
         <span class="ntg-sub">Most played • Live</span>
       </div>
       <div id="trendingGrid" class="trending-grid-v2"></div>
@@ -13,7 +13,7 @@ export function renderNoticeTrendingGrid(){
     <!-- RIGHT - NOTICE BOARD -->
     <div class="ntg-notice">
       <div class="ntg-head">
-        <h3><span class="ntg-dot red"></span> NOTICE BOARD</h3>
+        <h3>NOTICE BOARD</h3>
         <span class="ntg-sub" style="display:flex;align-items:center;gap:6px">
           <span style="width:6px;height:6px;background:#22c55e;border-radius:50%;box-shadow:0 0 8px #22c55e;display:inline-block"></span> LIVE
         </span>
@@ -49,8 +49,9 @@ export function renderNoticeTrendingGrid(){
       width:100%;
       align-items:start;
       box-sizing:border-box;
-      padding:4px;
+      padding:4px 4px 160px 4px;
       margin-top:24px;
+      margin-bottom:40px;
     }
     .ntg-trend,.ntg-notice{
       background: radial-gradient(120% 120% at 0% 0%, rgba(0,240,255,0.06), transparent 55%), rgba(18,24,58,0.92);
@@ -67,37 +68,48 @@ export function renderNoticeTrendingGrid(){
       margin-bottom:18px; padding-bottom:14px;
       border-bottom:1px solid rgba(255,255,255,0.07);
     }
+    /* SAME TITLE AS FEATURED / LATEST / ARSENAL */
     .ntg-head h3{
-      font-family:'Orbitron',sans-serif; font-size:13px; letter-spacing:1.4px;
-      color:#e9ecff; margin:0; display:flex; align-items:center; gap:10px;
+      all:unset;
+      font-family:'Orbitron',sans-serif !important;
+      font-size:18px !important;
+      font-weight:800 !important;
+      letter-spacing:2px !important;
+      color:#fff !important;
+      display:flex !important;
+      align-items:center !important;
+      gap:10px !important;
     }
-    .ntg-dot{width:7px;height:7px;background:#00f0ff;border-radius:50%;box-shadow:0 0 8px #00f0ff}
-    .ntg-dot.red{background:#ff2a2a;box-shadow:0 0 8px #ff2a2a}
+    .ntg-head h3::before{
+      content:"";
+      width:3px;
+      height:18px;
+      background:linear-gradient(180deg,#60B5FF,#FF1E3C);
+      border-radius:999px;
+      display:inline-block;
+      flex-shrink:0;
+    }
     .ntg-sub{font-size:11px;color:rgba(233,236,255,0.5);letter-spacing:0.3px}
-    
-    /* TRENDING - PERFECT PADDING */
+   
     .trending-grid-v2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
     .trending-card{border-radius:16px;overflow:hidden;aspect-ratio:1/1}
-    
-    /* DROPS */
+   
     #dtDropsWrap{max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:2px}
     #dtDropsWrap::-webkit-scrollbar{width:4px} #dtDropsWrap::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:99px}
-    
-    /* CHAT */
+   
     #dtChatList{height:280px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;background:#000;border-radius:0 0 12px 12px}
     #dtChatList::-webkit-scrollbar{display:none}
     #dtChatWrap{margin-top:16px;background:#0a0a0a;border:1px solid #1e1e2e;border-radius:16px;overflow:hidden}
     #dtRecommendWrap{margin-top:14px;display:none;padding-top:2px}
 
-    /* INPUT - PERFECT PADDING */
-    .ntg-input-row{display:flex;gap:12px;margin-top:18px;align-items:center}
+    .ntg-input-row{display:flex;gap:12px;margin-top:18px;align-items:center;padding-bottom:10px}
     #noticeBoardInput{flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:99px;padding:12px 18px;color:#fff;font-size:13px;outline:none;transition:.2s}
     #noticeBoardInput:focus{border-color:rgba(0,240,255,0.3);background:rgba(255,255,255,0.08)}
     #noticeBoardSend{background:#FF1E3C;border:none;width:44px;height:44px;border-radius:50%;color:#fff;cursor:pointer;display:grid;place-items:center;font-weight:900;flex-shrink:0;transition:.2s}
     #noticeBoardSend:hover{transform:scale(1.05);box-shadow:0 0 14px rgba(255,30,60,0.5)}
 
-    @media(max-width:1100px){.ntg-shell{grid-template-columns:1fr;gap:20px;padding:0}}
-    @media(max-width:640px){.ntg-trend,.ntg-notice{padding:18px 14px 16px 14px;border-radius:18px} .trending-grid-v2{gap:12px}}
+    @media(max-width:1100px){.ntg-shell{grid-template-columns:1fr;gap:20px;padding:0 0 160px 0}}
+    @media(max-width:640px){.ntg-trend,.ntg-notice{padding:18px 14px 16px 14px;border-radius:18px} .trending-grid-v2{gap:12px} .ntg-shell{padding-bottom:180px !important}}
   </style>
   `;
 }
@@ -112,4 +124,3 @@ export function initNoticeTrendingGrid(){
     ro.observe(shell);
   }
 }
-

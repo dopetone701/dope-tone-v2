@@ -72,3 +72,43 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--void);color:va
 #dt-footer{margin-bottom:0!important;padding-bottom:12px!important;position:relative!important;bottom:auto!important;z-index:5!important;transform:none!important;margin-top:auto!important;}
 @media(max-width:768px){.wave-bar{display:none!important;}.wave-row{padding:10px 12px!important;min-height:60px!important;gap:10px!important}.wave-left{flex:0 0 46px!important}.wave-cover-wrap{width:46px!important;height:46px!important}}
 
+/* FIX PLAYER ON TOP OF RIGHT SIDEBAR */
+#app-shell { position: relative!important; }
+#main-row { padding-bottom: 90px!important; }
+
+#player-bar {
+  position: fixed!important;
+  bottom: 0!important;
+  left: 0!important;
+  right: 0!important;
+  width: 100%!important;
+  z-index: 99999!important;
+  background: #0A1931!important;
+  border-top: 1px solid rgba(255,255,255,0.1)!important;
+}
+
+#right-sidebar {
+  z-index: 10!important;
+  padding-bottom: 90px!important;
+  height: calc(100vh - 90px)!important;
+  bottom: 90px!important;
+}
+
+#left-sidebar {
+  z-index: 10!important;
+  padding-bottom: 90px!important;
+  height: calc(100vh - 90px)!important;
+}
+
+#app-view { padding-bottom: 90px!important; }
+
+
+#waveList, .wave-row, .wave-actions, .dt-dots-wrap{overflow:visible!important}
+.dt-dots-wrap{position:relative!important}
+.dt-row-menu{
+  position:absolute!important;
+  right:0!important;
+  top:calc(100% + 8px)!important;
+  z-index:999999!important;
+  box-shadow:0 20px 50px rgba(0,0,0,.6)!important;
+}
