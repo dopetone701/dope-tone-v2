@@ -75,26 +75,13 @@ function preloadAround(index){
 // ENGINE - SINGLETON LOCK
 export function initPlayerEngine(){
   if(window.__DT_AUDIO__){ audio = window.__DT_AUDIO__; if(!booted) bootPlayerListeners(); return audio; }
-  
-  // CHECK IF THERE IS ALREADY A TAG IN HTML
-  let existing = document.getElementById('dt-audio-tag');
-  if(existing){
-    audio = existing;
-  } else {
-    audio = document.createElement('audio');
-    audio.id = 'dt-audio-tag';
-    audio.crossOrigin = 'anonymous';
-    audio.preload = 'auto';
-    audio.playsInline = true;
-    audio.loop = false;
-    audio.style.position = 'fixed';
-    audio.style.left = '-9999px';
-    audio.style.width = '1px';
-    audio.style.height = '1px';
-    document.body.appendChild(audio); // THIS IS THE KEY - MUST BE IN DOM
-  }
-  
+  audio = new Audio();
+  audio.crossOrigin = 'anonymous';
+  audio.preload = 'auto';
+  audio.playsInline = true;
+  audio.loop = false;
   audio.playbackRate = 1.0;
+  audio.preservesPitch = true;
   window.__DT_AUDIO__ = audio;
   window.__DOPE_TONE_AUDIO__ = audio;
   booted = true;
