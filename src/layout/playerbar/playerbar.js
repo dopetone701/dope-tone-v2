@@ -254,7 +254,6 @@ export function initplayerbar(){
   el.innerHTML = `
   <div id="globalPlayerUI" class="global-player">
     <div class="gp-left">
-// AFTER - ONLY PATH FIXED TO MATCH YOUR SIDEBAR REFERENCE:
 <img id="gpCover" src="/public/images/logo.png" alt="" onerror="this.onerror=null;this.src='/images/logo.png'">
       <div class="gp-text">
         <div id="gpTitle">No track</div>
