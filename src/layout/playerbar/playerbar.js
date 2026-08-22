@@ -254,7 +254,8 @@ export function initplayerbar(){
   el.innerHTML = `
   <div id="globalPlayerUI" class="global-player">
     <div class="gp-left">
-      <img id="gpCover" src="public/images/logo.png" alt="">
+// AFTER - ONLY PATH FIXED TO MATCH YOUR SIDEBAR REFERENCE:
+<img id="gpCover" src="/public/images/logo.png" alt="" onerror="this.onerror=null;this.src='/images/logo.png'">
       <div class="gp-text">
         <div id="gpTitle">No track</div>
         <div style="font-size:11px;color:#9CA3AF">Dope Tone Vault</div>
@@ -360,7 +361,8 @@ export async function playTrack(track, shouldPlay = true){
 }
 
 function updatePlayerUI(t){
-  const cover = t.cover_url || t.cover || 'public/images/logo.png';
+// AFTER - ONLY PATH FIXED TO MATCH YOUR SIDEBAR REFERENCE:
+const cover = t.cover_url || t.cover || '/public/images/logo.png';
   const coverEl = document.getElementById('gpCover'); if(coverEl) coverEl.src = cover;
   const title = document.getElementById('gpTitle'); if(title) title.textContent = t.title || 'No track';
   if('mediaSession' in navigator){
