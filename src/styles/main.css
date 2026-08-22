@@ -102,12 +102,3 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--void);color:va
 #app-view { padding-bottom: 90px!important; }
 
 
-#waveList, .wave-row, .wave-actions, .dt-dots-wrap{overflow:visible!important}
-.dt-dots-wrap{position:relative!important}
-.dt-row-menu{
-  position:absolute!important;
-  right:0!important;
-  top:calc(100% + 8px)!important;
-  z-index:999999!important;
-  box-shadow:0 20px 50px rgba(0,0,0,.6)!important;
-}
