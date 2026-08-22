@@ -4,15 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DOPE TONE VAULT V2</title>
+<meta name="theme-color" content="#0A1931">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DOPE VAULT">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="manifest" href="./manifest-data-uri.webmanifest?v=5">
 
-<!-- V13 FINAL - Kills beats#/#/beats loop + drawer blur fix -->
+<!-- your existing CDNs stay -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.0/dist/apexcharts.min.js"></script>
+<script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Orbitron:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./src/styles/main.css">
+
+<!-- PWA INSTALL FIX - must stay in head -->
 <script>
   (function(){
     try {
       var full = location.href;
       var hasDoubleHash = (full.match(/#/g) || []).length > 1;
       var hasWeird = full.includes("#/#/") || full.includes("beats#") || full.includes("vault#") || full.includes("cart#");
-
       if(hasDoubleHash || hasWeird){
         var hash = location.hash || "";
         var parts = hash.split("#").filter(Boolean);
@@ -21,7 +34,6 @@
         last = last.split("?")[0].split("#")[0] || "/home";
         last = last.replace(/\/+/g, "/").replace(/\/+$/, "") || "/home";
         var finalUrl = "/#" + last.replace(/^\//, "");
-        console.log("[V13 FIX] BAD URL:", full, "->", finalUrl);
         location.replace(finalUrl);
       }
       if(!location.hash || location.hash === "#"){
@@ -30,36 +42,12 @@
     } catch(e){}
   })();
 </script>
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.0/dist/apexcharts.min.js"></script>
-<script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Orbitron:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./src/styles/main.css">
-
-
-
 <style id="NUCLEAR-KILL-VIGNETTE-2">
-/* KILL EVERYTHING THAT CAN CREATE LEFT/RIGHT FADE */
-*, *::before, *::after {
-  box-shadow: none!important;
-  filter: none!important;
-  backdrop-filter: none!important;
-  -webkit-backdrop-filter: none!important;
-}
-
-html, body {
-  background: #0A1931!important;
-}
-
-
+*, *::before, *::after { box-shadow: none!important; filter: none!important; backdrop-filter: none!important; -webkit-backdrop-filter: none!important; }
+html, body { background: #0A1931!important; }
 </style>
-
-
-
 </head>
+
 <body>
 
 <div id="app-shell">
